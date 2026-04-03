@@ -1,49 +1,80 @@
 # Daily Dev Task Automation
 
-An n8n workflow that inspects your codebase every morning, generates a prioritised task list using an LLM of your choice, and sends you an end-of-day completion report, driven by the MCP server in this repo.
+An n8n workflow template that uses the MCP server in this repo to inspect a local codebase, generate a morning task list, and send an evening completion report.
 
----
+The exported workflow has been sanitized. It does not contain plaintext API keys, bot tokens, SMTP passwords, or live personal endpoints.
 
-## How it works
+## What the workflow does
 
-Two scheduled flows run automatically each day.
+There are three ways to run it:
 
-**Morning (7:00 AM)**
+1. A scheduled morning flow at 7:00 AM
+2. A scheduled evening flow at 6:00 PM
+3. A Slack app-mention trigger that lets you type `morning` or `evening` to run either flow on demand
 
-1. Runs `git pull` on your project directory
-2. Lists matching source files and scans for `TODO`, `FIXME`, `HACK`, and `BUG` markers
-3. Collects recent commits from the git log
-4. Sends all of that context to the configured LLM, which returns a structured list of 5–8 actionable tasks (with priority, category, estimated time, and relevant file hints)
-5. Saves the task list to `.n8n-tasks/tasks_YYYY-MM-DD.json` in your project
-6. Delivers the tasks to **Slack** (rich block message) and **Email** (styled HTML)
+## Current node layout
 
-**Evening (6:00 PM)**
+### Morning flow
 
-1. Loads this morning's saved task file
-2. Fetches today's commit log with per-commit file stats
-3. Counts remaining TODO markers in the codebase
-4. Sends everything to the LLM, which compares each task against the git evidence and assesses it as `completed`, `partial`, or `not_started`
-5. Sends a **report email** with a productivity score (A–D), per-task breakdown, metrics, blockers, and suggestions for tomorrow
-6. Archives the report to `.n8n-tasks/report_YYYY-MM-DD.json`
+1. `Morning Trigger (7:00 AM)`
+2. `Git Pull via MCP`
+3. `Read Codebase via MCP`
+4. `Inspect Code Markers via MCP`
+5. `Message a model` using Google Gemini
+6. `Format Morning Notifications`
+7. `Prepare Task Storage`
+8. `Save Tasks to Disk via MCP`
+9. `Send Morning Tasks to Slack`
+10. `Send Morning Tasks Email`
 
----
+### Evening flow
+
+1. `Evening Trigger (6:00 PM)`
+2. `Load Morning Tasks via MCP`
+3. `Get Today Git Activity via MCP`
+4. `Count Remaining TODOs via MCP`
+5. `Analyze Completion (Claude AI)`
+6. `Format Evening Report`
+7. `Send Evening Report Email`
+8. `Save Report to Disk via MCP`
+
+### Slack-triggered flow
+
+1. `Slack Trigger`
+2. `Check Morning`
+3. If the message contains `morning`, it enters the same morning chain starting at `Git Pull via MCP`
+4. Otherwise it goes to `Check Evening`
+5. If the message contains `evening`, it enters the same evening chain starting at `Load Morning Tasks via MCP`
+6. If neither matches, `Reply to Slack` sends a fallback response
+
+## What gets stored
+
+The workflow writes files under `.n8n-tasks/` inside your target repository:
+
+```text
+/YOUR/PROJECT/PATH/.n8n-tasks/
+  tasks_YYYY-MM-DD.json
+  report_YYYY-MM-DD.json
+```
+
+The morning task file includes generated tasks plus the rendered Slack and email payloads. The evening report file stores the structured report JSON.
 
 ## Prerequisites
 
-- [n8n](https://n8n.io) (self-hosted or cloud)
+- n8n
 - Node.js 20+
-- This local MCP server (see setup below)
-- An API key for your chosen LLM provider (the workflow ships pre-configured for Anthropic; see [Switching LLM providers](#switching-llm-providers))
-- A Slack workspace with a bot token
-- SMTP credentials for sending email
-
----
+- This MCP server running locally
+- A target repository on the same machine
+- A Google Gemini credential for the morning model node
+- An Anthropic API key for the evening analysis request
+- A Slack app and credential if you want Slack delivery or Slack-triggered runs
+- SMTP credentials if you want email delivery
 
 ## Setup
 
 ### 1. Start the MCP server
 
-The workflow communicates with your filesystem and git through this repo's MCP server on `localhost:3000` by default.
+From the repo root:
 
 ```bash
 npm install
@@ -51,228 +82,183 @@ npm run build
 npm start
 ```
 
-Docker works too:
+Or with Docker:
 
 ```bash
 docker compose up -d --build
 ```
 
-The workflow uses these MCP tools from this server:
+The workflow template now points MCP requests at:
+
+```text
+http://localhost:3000/mcp
+```
+
+If n8n runs in Docker, you will usually need to change that host to `http://host.docker.internal:3000/mcp`.
+
+### 2. Import the workflow
+
+In n8n, import `daily-dev-workflow.json`.
+
+### 3. Replace the repository path
+
+Search the workflow for:
+
+```text
+/YOUR/PROJECT/PATH
+```
+
+Replace every occurrence with the absolute path to the repository you want to inspect.
+
+Those placeholders are used in:
 
 - `git_pull`
 - `search_files`
 - `run_command`
 - `read_file`
 - `write_file`
+- the morning task storage path builder
+- the evening report storage path
 
-Keep the server running while n8n is active. A process manager like `pm2` works well:
+### 4. Configure model credentials
 
-```bash
-pm2 start "npm start" --name local-mcp
-```
+Configure these nodes before activating the workflow:
 
-### 2. Import the workflow
+- `Message a model`: attach your Google Gemini credential
+- `Analyze Completion (Claude AI)`: set the Anthropic API key used by the `x-api-key` header expression, or change the node to use your preferred auth setup
 
-In n8n, go to **Workflows → Import from file** and select `daily-dev-workflow.json`.
+By default, the morning flow uses `models/gemini-2.5-flash` and the evening flow posts to `https://api.anthropic.com/v1/messages` with model `claude-opus-4-5`.
 
-### 3. Replace the project path
+### 5. Configure Slack and email nodes
 
-Search the imported workflow for `/YOUR/PROJECT/PATH` and replace every occurrence with your actual repository path. There are 7 occurrences across the MCP HTTP Request nodes.
+Update these placeholders:
 
-You can do this in the n8n UI by opening each HTTP Request node and editing the `params` body, or by doing a find-and-replace in the JSON before importing.
+- Slack channel IDs: `YOUR_SLACK_CHANNEL_ID`
+- Email addresses: `automation@example.com` and `you@example.com`
+- Slack credentials marked `Configure Slack credential`
+- SMTP credentials marked `Configure SMTP credential`
 
-### 4. Configure credentials
-
-Open each node that requires a credential and connect the appropriate account.
-
-| Node | Credential type | What to configure |
-|---|---|---|
-| Generate Tasks (LLM) | HTTP Header Auth | Your LLM provider API key (see below) |
-| Analyze Completion (LLM) | HTTP Header Auth | Same API key |
-| Send Morning Tasks to Slack | Slack OAuth2 | Your Slack bot token |
-| Send Morning Tasks Email | SMTP | Host, port, username, password |
-| Send Evening Report Email | SMTP | Same SMTP account |
-
-### 5. Update notification targets
-
-In the **Slack** node, change the `channel` field from `#dev-daily` to your preferred channel.
-
-In both **Email** nodes, update `fromEmail` and `toEmail` to your actual addresses.
+The Slack app-mention trigger also needs to be connected to your Slack workspace before manual runs will work.
 
 ### 6. Activate the workflow
 
-Toggle the workflow to **Active** in n8n. It will fire automatically at 7:00 AM and 6:00 PM in the timezone configured on your n8n instance.
+Once the paths, credentials, and notification targets are set, activate the workflow in n8n.
 
----
+## MCP usage
 
-## File structure
+The workflow uses the MCP server for all local git and filesystem access.
 
-The workflow creates and reads files inside a `.n8n-tasks/` directory at the root of your project:
+Morning flow:
 
-```
-your-project/
-└── .n8n-tasks/
-    ├── tasks_2026-04-02.json       # morning task list
-    ├── report_2026-04-02.json      # evening completion report
-    ├── tasks_2026-04-03.json
-    └── report_2026-04-03.json
-```
+- `git_pull`
+- `search_files`
+- `run_command`
+- `write_file`
 
-Add `.n8n-tasks/` to your `.gitignore` if you don't want these committed.
+Evening flow:
 
----
+- `read_file`
+- `run_command`
+- `write_file`
 
-## Task list schema
+## Morning output schema
 
-The LLM returns tasks in this structure each morning:
+The morning model is expected to return JSON in this shape:
 
 ```json
 {
-  "date": "2026-04-02",
+  "date": "2026-04-03",
   "summary": "One sentence project status",
   "tasks": [
     {
       "id": "T001",
       "priority": "high",
       "category": "bugfix",
-      "title": "Fix auth token refresh race condition",
-      "description": "The refresh logic in authService.ts has a race condition when two requests fire simultaneously. Needs a mutex or request deduplication.",
-      "file_hints": ["src/services/authService.ts", "src/hooks/useAuth.ts"],
+      "title": "Short task title",
+      "description": "Two or three sentence description.",
+      "file_hints": ["src/file.ts"],
       "estimated_minutes": 45
     }
   ]
 }
 ```
 
-Valid values for `priority`: `high`, `medium`, `low`  
-Valid values for `category`: `bugfix`, `feature`, `refactor`, `test`, `docs`, `chore`
+Allowed values:
 
----
+- `priority`: `high`, `medium`, `low`
+- `category`: `bugfix`, `feature`, `refactor`, `test`, `docs`, `chore`
 
 ## Evening report schema
 
+The evening model is expected to return JSON in this shape:
+
 ```json
 {
-  "date": "2026-04-02",
+  "date": "2026-04-03",
   "overall_completion": 75,
   "productivity_score": "B",
-  "executive_summary": "Strong day — 4 of 6 tasks completed with solid commit coverage.",
+  "executive_summary": "Short summary of the day.",
   "tasks": [
     {
       "id": "T001",
-      "title": "Fix auth token refresh race condition",
+      "title": "Short task title",
       "status": "completed",
-      "evidence": "Commit a3f9c12 modified authService.ts with mutex implementation",
+      "evidence": "Git or code evidence supporting the status.",
       "completion_pct": 100
     }
   ],
   "unplanned_work": [
-    { "description": "Investigated flaky CI test in pipeline", "impact": "positive" }
+    { "description": "Investigated a production issue", "impact": "positive" }
   ],
-  "blockers": ["Waiting on API credentials from third-party vendor"],
-  "tomorrow_suggestions": ["Complete the remaining test coverage for authService"],
+  "blockers": ["Waiting on external input"],
+  "tomorrow_suggestions": ["Finish remaining tests"],
   "metrics": {
-    "commits_today": 5,
+    "commits_today": 3,
     "files_changed": 12,
-    "todos_resolved": 3
+    "todos_resolved": 2
   }
 }
 ```
 
----
+Allowed values:
 
-## Customisation
+- `productivity_score`: `A`, `B`, `C`, `D`
+- `status`: `completed`, `partial`, `not_started`
+- `impact`: `positive`, `neutral`, `negative`
 
-**Change the trigger times** — open the Schedule Trigger nodes and adjust `triggerAtHour` and `triggerAtMinute`.
+## Sanitization notes
 
-**Switch LLM provider or model** — see [Switching LLM providers](#switching-llm-providers) below.
+The checked-in workflow template has been scrubbed of environment-specific values that should not be published:
 
-**Adjust how many tasks are generated** — edit the system prompt in the "Generate Tasks" node. The default asks for 5–8 tasks; increase or decrease this number to match your typical day.
+- The MCP base URL now uses `http://localhost:3000/mcp`
+- Repository paths now use `/YOUR/PROJECT/PATH`
+- Slack channel IDs are placeholders
+- Email recipients and senders are placeholders
+- Exported n8n credential IDs and instance metadata are placeholders
 
-**Scope the file scan** — the `search_files` call uses the glob `**/*.{ts,tsx,js,jsx,py,go,rs,java,cs,rb,md,json,yaml,yml,toml}`. Adjust that pattern to match your stack.
-
-**Add more code marker types** — the grep pattern in "Inspect Code Markers" scans for `TODO`, `FIXME`, `HACK`, `XXX`, and `BUG`. Extend the pattern to catch your team's conventions.
-
----
+I did not find any plaintext API secret, bearer token, SMTP password, or private key in the workflow export.
 
 ## Troubleshooting
 
-**MCP nodes return connection errors** — confirm the MCP server is running on port 3000 with `curl http://localhost:3000/health`. If you're running n8n in Docker, replace `localhost` with `host.docker.internal`.
+`MCP requests fail`
 
-**LLM returns malformed JSON** — both AI nodes include a JSON extraction fallback in the Code nodes that strips markdown fences and extracts the first `{...}` block. If parsing still fails, check the raw response in the n8n execution log and tighten the system prompt.
+- Confirm the MCP server is reachable at `/health`
+- If n8n is containerized, switch `localhost` to `host.docker.internal`
 
-**Evening flow can't find the morning task file** — ensure both n8n and the MCP server are running with permission to read and write the `.n8n-tasks/` directory. The file path uses today's date in `YYYY-MM-DD` format based on the server's local timezone — make sure n8n's timezone setting matches.
+`Morning tasks are empty`
 
-**Slack message not appearing** — confirm your Slack bot has been invited to the target channel (`/invite @your-bot-name`).
+- Check the output from `Message a model`
+- The downstream Code node tries to recover JSON from fenced or noisy model output, but invalid responses can still collapse to an empty task list
 
----
+`Evening analysis fails`
 
-## Architecture
+- Check the Anthropic request node headers and model settings
+- Verify the morning task file exists for the current date under `.n8n-tasks/`
 
-```
-7:00 AM Schedule
-  └─ Git Pull (MCP)
-       └─ Read Directory (MCP)
-            └─ Inspect Code Markers (MCP)
-                 └─ Generate Tasks (LLM)
-                      └─ Format Notifications
-                           └─ Save Tasks (MCP)
-                                ├─ Slack message
-                                └─ Email
+`Slack app mentions do nothing`
 
-6:00 PM Schedule
-  └─ Load Morning Tasks (MCP)
-       └─ Get Git Activity (MCP)
-            └─ Count TODOs (MCP)
-                 └─ Analyze Completion (LLM)
-                      └─ Format Report
-                           ├─ Report Email
-                           └─ Save Report (MCP)
-```
-
-All filesystem and git operations are proxied through the local MCP server via JSON-RPC over HTTP.
-
----
-
-## Switching LLM providers
-
-The two HTTP Request nodes that call the LLM ("Generate Tasks" and "Analyze Completion") are plain `POST` requests — swap the URL, auth header, and body to use any provider.
-
-**Anthropic (default)**
-```
-URL:    https://api.anthropic.com/v1/messages
-Header: x-api-key: <your key>
-        anthropic-version: 2023-06-01
-Body:   { "model": "claude-opus-4-6", "max_tokens": 2000, "messages": [...] }
-```
-
-**OpenAI / OpenAI-compatible**
-```
-URL:    https://api.openai.com/v1/chat/completions
-Header: Authorization: Bearer <your key>
-Body:   { "model": "gpt-4o", "messages": [{ "role": "system", ... }, { "role": "user", ... }] }
-```
-Adjust the response extraction in the downstream Code nodes: OpenAI returns `data.choices[0].message.content` instead of `data.content[0].text`.
-
-**Ollama (local)**
-```
-URL:    http://localhost:11434/api/chat
-Header: (none required)
-Body:   { "model": "llama3", "stream": false, "messages": [...] }
-```
-Response path: `data.message.content`.
-
-**Google Gemini**
-```
-URL:    https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=<your key>
-Header: Content-Type: application/json
-Body:   { "contents": [{ "parts": [{ "text": "..." }] }] }
-```
-Response path: `data.candidates[0].content.parts[0].text`.
-
-For any provider, the two system prompts (in the `system` field or first `messages` entry) can stay exactly as-is — they instruct the model to return strict JSON, which works regardless of the underlying model.
-
----
+- Confirm the Slack trigger is connected to the correct workspace and channel
+- Make sure the app has permission to receive mentions in that channel
 
 ## License
 

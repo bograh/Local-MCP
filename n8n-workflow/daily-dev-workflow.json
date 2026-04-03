@@ -42,7 +42,7 @@
         {
             "parameters": {
                 "method": "POST",
-                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "url": "http://localhost:3000/mcp",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
@@ -73,7 +73,7 @@
                         },
                         {
                             "name": "params",
-                            "value": "={{ { name: 'git_pull', arguments: { repo: '/home/bograh/Code/cloud-storage-with-s3', remote: 'origin', branch: 'main' } } }}"
+                            "value": "={{ { name: 'git_pull', arguments: { repo: '/YOUR/PROJECT/PATH', remote: 'origin', branch: 'main' } } }}"
                         }
                     ]
                 },
@@ -87,12 +87,12 @@
                 -8704,
                 1632
             ],
-            "notes": "Calls the local MCP server in this repo. Replace /home/bograh/Code/cloud-storage-with-s3 with your actual repo directory."
+            "notes": "Calls the local MCP server in this repo. Replace /YOUR/PROJECT/PATH with your actual repo directory."
         },
         {
             "parameters": {
                 "method": "POST",
-                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "url": "http://localhost:3000/mcp",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
@@ -123,7 +123,7 @@
                         },
                         {
                             "name": "params",
-                            "value": "={{ { name: 'search_files', arguments: { base_path: '/home/bograh/Code/cloud-storage-with-s3', pattern: '**/*.{ts,tsx,js,jsx,py,go,rs,java,cs,rb,md,json,yaml,yml,toml}', max_results: 500 } } }}"
+                            "value": "={{ { name: 'search_files', arguments: { base_path: '/YOUR/PROJECT/PATH', pattern: '**/*.{ts,tsx,js,jsx,py,go,rs,java,cs,rb,md,json,yaml,yml,toml}', max_results: 500 } } }}"
                         }
                     ]
                 },
@@ -137,12 +137,12 @@
                 -8448,
                 1632
             ],
-            "notes": "Searches source files using the MCP search_files tool. Replace /home/bograh/Code/cloud-storage-with-s3."
+            "notes": "Searches source files using the MCP search_files tool. Replace /YOUR/PROJECT/PATH."
         },
         {
             "parameters": {
                 "method": "POST",
-                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "url": "http://localhost:3000/mcp",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
@@ -173,7 +173,7 @@
                         },
                         {
                             "name": "params",
-                            "value": "={{ { name: 'run_command', arguments: { command: 'git log --since=yesterday --oneline && printf \"\\n---TODOS---\\n\" && (grep -rn \"TODO\\\\|FIXME\\\\|HACK\\\\|XXX\\\\|BUG\" --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.js\" --include=\"*.jsx\" --include=\"*.py\" --include=\"*.go\" . | head -50 || true)', cwd: '/home/bograh/Code/cloud-storage-with-s3', timeout_ms: 30000 } } }}"
+                            "value": "={{ { name: 'run_command', arguments: { command: 'git log --since=yesterday --oneline && printf \"\\n---TODOS---\\n\" && (grep -rn \"TODO\\\\|FIXME\\\\|HACK\\\\|XXX\\\\|BUG\" --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.js\" --include=\"*.jsx\" --include=\"*.py\" --include=\"*.go\" . | head -50 || true)', cwd: '/YOUR/PROJECT/PATH', timeout_ms: 30000 } } }}"
                         }
                     ]
                 },
@@ -192,7 +192,7 @@
         {
             "parameters": {
                 "method": "POST",
-                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "url": "http://localhost:3000/mcp",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
@@ -223,7 +223,7 @@
                         },
                         {
                             "name": "params",
-                            "value": "={{ { name: 'write_file', arguments: { path: '/home/bograh/Code/cloud-storage-with-s3/.n8n-tasks/' + $json.storageKey, content: $json.storagePayload } } }}"
+                            "value": "={{ { name: 'write_file', arguments: { path: '/YOUR/PROJECT/PATH/.n8n-tasks/' + $json.storageKey, content: $json.storagePayload } } }}"
                         }
                     ]
                 },
@@ -237,14 +237,14 @@
                 -7136,
                 1632
             ],
-            "notes": "Saves the generated task list to /home/bograh/Code/cloud-storage-with-s3/.n8n-tasks/ as a JSON file for evening retrieval."
+            "notes": "Saves the generated task list to /YOUR/PROJECT/PATH/.n8n-tasks/ as a JSON file for evening retrieval."
         },
         {
             "parameters": {
                 "select": "channel",
                 "channelId": {
                     "__rl": true,
-                    "value": "C0AQFLP94LT",
+                    "value": "YOUR_SLACK_CHANNEL_ID",
                     "mode": "list",
                     "cachedResultName": "mcp"
                 },
@@ -259,19 +259,19 @@
                 -6880,
                 1520
             ],
-            "webhookId": "93c8b527-effd-4192-a05d-11f38264e7d4",
+            "webhookId": "REPLACE_ON_IMPORT_MORNING_SLACK",
             "credentials": {
                 "slackApi": {
-                    "id": "zC0CykQkcHXXZ4tK",
-                    "name": "Slack account"
+                    "id": "__CONFIGURE_IN_N8N__",
+                    "name": "Configure Slack credential"
                 }
             },
             "notes": "Configure your Slack credential and target channel."
         },
         {
             "parameters": {
-                "fromEmail": "automation@ograh.xyz",
-                "toEmail": "benclanks@gmail.com",
+                "fromEmail": "automation@example.com",
+                "toEmail": "you@example.com",
                 "subject": "={{ $node['Format Morning Notifications'].json.emailSubject }}",
                 "html": "={{ $node['Format Morning Notifications'].json.emailHtml }}",
                 "options": {}
@@ -284,11 +284,11 @@
                 -6880,
                 1728
             ],
-            "webhookId": "2593ba91-70ca-40f3-8175-fe4259a527d5",
+            "webhookId": "REPLACE_ON_IMPORT_MORNING_EMAIL",
             "credentials": {
                 "smtp": {
-                    "id": "LUfWtNDpL2Xu29Zu",
-                    "name": "SMTP account"
+                    "id": "__CONFIGURE_IN_N8N__",
+                    "name": "Configure SMTP credential"
                 }
             },
             "notes": "Configure your SMTP credential. Update fromEmail and toEmail."
@@ -296,7 +296,7 @@
         {
             "parameters": {
                 "method": "POST",
-                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "url": "http://localhost:3000/mcp",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
@@ -327,7 +327,7 @@
                         },
                         {
                             "name": "params",
-                            "value": "={{ { name: 'read_file', arguments: { path: '/home/bograh/Code/cloud-storage-with-s3/.n8n-tasks/tasks_' + new Date().toISOString().split('T')[0] + '.json' } } }}"
+                            "value": "={{ { name: 'read_file', arguments: { path: '/YOUR/PROJECT/PATH/.n8n-tasks/tasks_' + new Date().toISOString().split('T')[0] + '.json' } } }}"
                         }
                     ]
                 },
@@ -346,7 +346,7 @@
         {
             "parameters": {
                 "method": "POST",
-                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "url": "http://localhost:3000/mcp",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
@@ -377,7 +377,7 @@
                         },
                         {
                             "name": "params",
-                            "value": "={{ { name: 'run_command', arguments: { command: 'git log --since=\"today 00:00\" --stat --oneline', cwd: '/home/bograh/Code/cloud-storage-with-s3', timeout_ms: 30000 } } }}"
+                            "value": "={{ { name: 'run_command', arguments: { command: 'git log --since=\"today 00:00\" --stat --oneline', cwd: '/YOUR/PROJECT/PATH', timeout_ms: 30000 } } }}"
                         }
                     ]
                 },
@@ -461,8 +461,8 @@
         },
         {
             "parameters": {
-                "fromEmail": "automation@yourcompany.com",
-                "toEmail": "you@yourcompany.com",
+                "fromEmail": "automation@example.com",
+                "toEmail": "you@example.com",
                 "subject": "={{ $json.emailSubject }}",
                 "html": "={{ $json.emailHtml }}",
                 "options": {}
@@ -475,18 +475,18 @@
                 -7328,
                 2160
             ],
-            "webhookId": "19724565-bcf0-49a2-9aec-b158a48d4901",
+            "webhookId": "REPLACE_ON_IMPORT_EVENING_EMAIL",
             "credentials": {
                 "smtp": {
-                    "id": "LUfWtNDpL2Xu29Zu",
-                    "name": "SMTP account"
+                    "id": "__CONFIGURE_IN_N8N__",
+                    "name": "Configure SMTP credential"
                 }
             }
         },
         {
             "parameters": {
                 "method": "POST",
-                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "url": "http://localhost:3000/mcp",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
@@ -517,7 +517,7 @@
                         },
                         {
                             "name": "params",
-                            "value": "={{ { name: 'write_file', arguments: { path: '/home/bograh/Code/cloud-storage-with-s3/.n8n-tasks/report_' + new Date().toISOString().split('T')[0] + '.json', content: JSON.stringify($json.report, null, 2) } } }}"
+                            "value": "={{ { name: 'write_file', arguments: { path: '/YOUR/PROJECT/PATH/.n8n-tasks/report_' + new Date().toISOString().split('T')[0] + '.json', content: JSON.stringify($json.report, null, 2) } } }}"
                         }
                     ]
                 },
@@ -565,15 +565,15 @@
             "name": "Message a model",
             "credentials": {
                 "googlePalmApi": {
-                    "id": "ji1MqVGPpDEsZAR6",
-                    "name": "Google Gemini(PaLM) Api account"
+                    "id": "__CONFIGURE_IN_N8N__",
+                    "name": "Configure Gemini credential"
                 }
             }
         },
         {
             "parameters": {
                 "mode": "runOnceForEachItem",
-                "jsCode": "const input = $json;\n\nif (!input || typeof input !== 'object' || Array.isArray(input)) {\n  throw new Error('Invalid input');\n}\n\nconst formattedTaskData =\n  input.taskData && typeof input.taskData === 'object' && !Array.isArray(input.taskData)\n    ? input.taskData\n    : input;\n\nconst tasks = Array.isArray(formattedTaskData.tasks)\n  ? formattedTaskData.tasks\n  : Array.isArray(input.tasks)\n    ? input.tasks\n    : [];\n\nconst date = formattedTaskData.date || input.date || new Date().toISOString().split('T')[0];\nconst storageKey = `tasks_${date}.json`;\nconst storagePath = `/home/bograh/Code/cloud-storage-with-s3/.n8n-tasks/${storageKey}`;\nconst totalMinutes = input.totalMinutes ?? tasks.reduce((sum, task) => sum + (Number(task?.estimated_minutes) || 0), 0);\n\nconst filePayload = {\n  saved_at: new Date().toISOString(),\n  date,\n  summary:\n    formattedTaskData.summary ||\n    input.summary ||\n    (input.emailSubject ? input.emailSubject.replace(/^\\[Dev Tasks\\]\\s*/, '') : '') ||\n    '',\n  tasks,\n  totalTasks: input.totalTasks ?? tasks.length,\n  totalMinutes,\n  status: formattedTaskData.status || input.status || 'pending',\n  generated_at: formattedTaskData.generated_at || input.generated_at || null,\n  slackBlocks: Array.isArray(input.slackBlocks) ? input.slackBlocks : [],\n  emailSubject: input.emailSubject || '',\n  emailHtml: input.emailHtml || '',\n};\n\nreturn {\n  json: {\n    ...input,\n    taskData: {\n      ...formattedTaskData,\n      date,\n      tasks,\n      totalTasks: filePayload.totalTasks,\n      totalMinutes,\n    },\n    storageKey,\n    storagePath,\n    storagePayload: JSON.stringify(filePayload, null, 2),\n  },\n};"
+                "jsCode": "const input = $json;\n\nif (!input || typeof input !== 'object' || Array.isArray(input)) {\n  throw new Error('Invalid input');\n}\n\nconst formattedTaskData =\n  input.taskData && typeof input.taskData === 'object' && !Array.isArray(input.taskData)\n    ? input.taskData\n    : input;\n\nconst tasks = Array.isArray(formattedTaskData.tasks)\n  ? formattedTaskData.tasks\n  : Array.isArray(input.tasks)\n    ? input.tasks\n    : [];\n\nconst date = formattedTaskData.date || input.date || new Date().toISOString().split('T')[0];\nconst storageKey = `tasks_${date}.json`;\nconst storagePath = `/YOUR/PROJECT/PATH/.n8n-tasks/${storageKey}`;\nconst totalMinutes = input.totalMinutes ?? tasks.reduce((sum, task) => sum + (Number(task?.estimated_minutes) || 0), 0);\n\nconst filePayload = {\n  saved_at: new Date().toISOString(),\n  date,\n  summary:\n    formattedTaskData.summary ||\n    input.summary ||\n    (input.emailSubject ? input.emailSubject.replace(/^\\[Dev Tasks\\]\\s*/, '') : '') ||\n    '',\n  tasks,\n  totalTasks: input.totalTasks ?? tasks.length,\n  totalMinutes,\n  status: formattedTaskData.status || input.status || 'pending',\n  generated_at: formattedTaskData.generated_at || input.generated_at || null,\n  slackBlocks: Array.isArray(input.slackBlocks) ? input.slackBlocks : [],\n  emailSubject: input.emailSubject || '',\n  emailHtml: input.emailHtml || '',\n};\n\nreturn {\n  json: {\n    ...input,\n    taskData: {\n      ...formattedTaskData,\n      date,\n      tasks,\n      totalTasks: filePayload.totalTasks,\n      totalMinutes,\n    },\n    storageKey,\n    storagePath,\n    storagePayload: JSON.stringify(filePayload, null, 2),\n  },\n};"
             },
             "id": "fa91bedf-aab6-4171-984d-b8a8f05e43f4",
             "name": "Prepare Task Storage",
@@ -587,7 +587,7 @@
         {
             "parameters": {
                 "method": "POST",
-                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "url": "http://localhost:3000/mcp",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
@@ -618,7 +618,7 @@
                         },
                         {
                             "name": "params",
-                            "value": "={{ { name: 'run_command', arguments: { command: 'printf \"remaining todos: \" && (grep -rn \"TODO\\\\|FIXME\\\\|HACK\" --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.js\" --include=\"*.jsx\" --include=\"*.py\" --include=\"*.go\" . | wc -l || true) && printf \"\\n\" && (grep -rn \"TODO\\\\|FIXME\" --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.js\" --include=\"*.jsx\" --include=\"*.py\" --include=\"*.go\" . | head -20 || true)', cwd: '/home/bograh/Code/cloud-storage-with-s3', timeout_ms: 30000 } } }}"
+                            "value": "={{ { name: 'run_command', arguments: { command: 'printf \"remaining todos: \" && (grep -rn \"TODO\\\\|FIXME\\\\|HACK\" --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.js\" --include=\"*.jsx\" --include=\"*.py\" --include=\"*.go\" . | wc -l || true) && printf \"\\n\" && (grep -rn \"TODO\\\\|FIXME\" --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.js\" --include=\"*.jsx\" --include=\"*.py\" --include=\"*.go\" . | head -20 || true)', cwd: '/YOUR/PROJECT/PATH', timeout_ms: 30000 } } }}"
                         }
                     ]
                 },
@@ -654,7 +654,7 @@
                 ],
                 "channelId": {
                     "__rl": true,
-                    "value": "C0AQN9K2W8J",
+                    "value": "YOUR_SLACK_CHANNEL_ID",
                     "mode": "list"
                 },
                 "options": {}
@@ -667,11 +667,11 @@
             ],
             "id": "65f818ad-d9fb-468b-a587-5de80913185e",
             "name": "Slack Trigger",
-            "webhookId": "00e479d3-8253-4a47-8222-cb8e96d097a6",
+            "webhookId": "REPLACE_ON_IMPORT_SLACK_TRIGGER",
             "credentials": {
                 "slackApi": {
-                    "id": "zC0CykQkcHXXZ4tK",
-                    "name": "Slack account"
+                    "id": "__CONFIGURE_IN_N8N__",
+                    "name": "Configure Slack credential"
                 }
             }
         },
@@ -713,8 +713,8 @@
             "name": "Reply to Slack",
             "credentials": {
                 "slackApi": {
-                    "id": "zC0CykQkcHXXZ4tK",
-                    "name": "Slack account"
+                    "id": "__CONFIGURE_IN_N8N__",
+                    "name": "Configure Slack credential"
                 }
             }
         },
@@ -960,11 +960,11 @@
         "binaryMode": "separate",
         "availableInMCP": false
     },
-    "versionId": "44fff840-29e6-466f-93e9-10d4ab42cbbe",
+    "versionId": "TEMPLATE_VERSION_ID",
     "meta": {
-        "templateCredsSetupCompleted": true,
-        "instanceId": "e89e159d2f6f362123df5e67fa3798fc88526b3e29e7da8cdf7ecb6fcc1848a1"
+        "templateCredsSetupCompleted": false,
+        "instanceId": "SANITIZED_TEMPLATE_INSTANCE"
     },
-    "id": "BgEG2FLn60tA04IQ",
+    "id": "SANITIZED_TEMPLATE_WORKFLOW_ID",
     "tags": []
 }
