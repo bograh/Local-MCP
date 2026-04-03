@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Router as ExpressRouter } from "express";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
   createMcpServer,
@@ -10,7 +11,7 @@ import {
 import { childLogger } from "../logger.js";
 
 const log = childLogger("mcp");
-const router = Router();
+const router: ExpressRouter = Router();
 
 router.post("/", async (req, res) => {
   log.info("New MCP session request received");

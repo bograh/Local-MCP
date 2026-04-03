@@ -6,13 +6,13 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      # Mount your home directory so the MCP server can access your real files
-      - ${HOME}:/host-home
+      # Mount this repo at the same absolute path so MCP path checks match the host path
+      - /home/bograh/Code/Local-MCP:/home/bograh/Code/Local-MCP
       # Mount Docker socket if you want the MCP to control Docker itself
       # - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PORT=3000
-      - FS_ROOT=/host-home
+      - FS_ROOT=/home/bograh/Code/Local-MCP
       - NODE_ENV=production
       # REQUIRED: set a strong random token here or in a .env file
       - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN}

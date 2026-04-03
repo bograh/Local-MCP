@@ -155,7 +155,7 @@ Handled seamlessly using `dotenv`.
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `PORT` | No | `3000` | HTTP port the Express server binds to. |
-| `FS_ROOT` | No | `/host-home` | Root directory for File operations. Path constraints enforce this border. |
+| `FS_ROOT` | No | current working directory | Root directory for File operations. Local runs default to the directory where you start the server. Docker deployments should set this explicitly, for example `/home/bograh/Code/Local-MCP` for a repo-scoped mount or `/host-home` for a home-directory mount. |
 | `MCP_AUTH_TOKEN` | **Yes (prod)** | _(none)_ | Bearer auth token for `X-MCP-Token`. Omitting heavily warns during `dev` mode. |
 | `NODE_ENV` | No | `development` | Setting to `production` enforces Token Auth checks. |
 

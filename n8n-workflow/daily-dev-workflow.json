@@ -1,0 +1,943 @@
+{
+    "name": "Daily Dev Task Automation",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "triggerAtHour": 7
+                        }
+                    ]
+                }
+            },
+            "id": "b927c8cb-8133-4f49-9942-bde266e1229c",
+            "name": "Morning Trigger (7:00 AM)",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                -8960,
+                1632
+            ]
+        },
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "triggerAtHour": 18
+                        }
+                    ]
+                }
+            },
+            "id": "61834a09-3159-42f3-ae38-d4a74bfc246d",
+            "name": "Evening Trigger (6:00 PM)",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                -8896,
+                2320
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Accept",
+                            "value": "application/json, text/event-stream"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "jsonrpc",
+                            "value": "2.0"
+                        },
+                        {
+                            "name": "id",
+                            "value": "1"
+                        },
+                        {
+                            "name": "method",
+                            "value": "tools/call"
+                        },
+                        {
+                            "name": "params",
+                            "value": "={{ { name: 'git_pull', arguments: { repo: '/home/bograh/Code/cloud-storage-with-s3', remote: 'origin', branch: 'main' } } }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "2a7ea3aa-32f8-4f84-af7b-49bc84dca8a1",
+            "name": "Git Pull via MCP",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                -8704,
+                1632
+            ],
+            "notes": "Calls the local MCP server in this repo. Replace /home/bograh/Code/cloud-storage-with-s3 with your actual repo directory."
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Accept",
+                            "value": "application/json, text/event-stream"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "jsonrpc",
+                            "value": "2.0"
+                        },
+                        {
+                            "name": "id",
+                            "value": "2"
+                        },
+                        {
+                            "name": "method",
+                            "value": "tools/call"
+                        },
+                        {
+                            "name": "params",
+                            "value": "={{ { name: 'search_files', arguments: { base_path: '/home/bograh/Code/cloud-storage-with-s3', pattern: '**/*.{ts,tsx,js,jsx,py,go,rs,java,cs,rb,md,json,yaml,yml,toml}', max_results: 500 } } }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "66e30f0e-f8a4-4a47-b8d0-d13e1bfe0319",
+            "name": "Read Codebase via MCP",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                -8448,
+                1632
+            ],
+            "notes": "Searches source files using the MCP search_files tool. Replace /home/bograh/Code/cloud-storage-with-s3."
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Accept",
+                            "value": "application/json, text/event-stream"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "jsonrpc",
+                            "value": "2.0"
+                        },
+                        {
+                            "name": "id",
+                            "value": "3"
+                        },
+                        {
+                            "name": "method",
+                            "value": "tools/call"
+                        },
+                        {
+                            "name": "params",
+                            "value": "={{ { name: 'run_command', arguments: { command: 'git log --since=yesterday --oneline && printf \"\\n---TODOS---\\n\" && (grep -rn \"TODO\\\\|FIXME\\\\|HACK\\\\|XXX\\\\|BUG\" --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.js\" --include=\"*.jsx\" --include=\"*.py\" --include=\"*.go\" . | head -50 || true)', cwd: '/home/bograh/Code/cloud-storage-with-s3', timeout_ms: 30000 } } }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "e0d16260-0139-4626-a13b-302d0ecbfc80",
+            "name": "Inspect Code Markers via MCP",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                -8176,
+                1632
+            ],
+            "notes": "Grabs recent git log + TODO/FIXME markers from the codebase."
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.anthropic.com/v1/messages",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "x-api-key",
+                            "value": "={{ $credentials.anthropicApi.apiKey }}"
+                        },
+                        {
+                            "name": "anthropic-version",
+                            "value": "2023-06-01"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "model",
+                            "value": "claude-opus-4-5"
+                        },
+                        {
+                            "name": "max_tokens",
+                            "value": "2000"
+                        },
+                        {
+                            "name": "system",
+                            "value": "You are a senior software engineer acting as a daily task planner. Analyze the provided codebase structure, recent git activity, and code markers (TODOs, FIXMEs, etc.) and generate a realistic, prioritized list of development tasks for today. Return your response as a valid JSON object only — no markdown, no preamble. Schema: { \"date\": \"YYYY-MM-DD\", \"summary\": \"one sentence project status\", \"tasks\": [ { \"id\": \"T001\", \"priority\": \"high|medium|low\", \"category\": \"bugfix|feature|refactor|test|docs|chore\", \"title\": \"short task title\", \"description\": \"2-3 sentence description\", \"file_hints\": [\"path/to/relevant/file\"], \"estimated_minutes\": 30 } ] }"
+                        },
+                        {
+                            "name": "messages",
+                            "value": "={{ JSON.stringify([\n  {\n    role: 'user',\n    content: `Analyze this codebase and generate today's development tasks.\\n\\nGIT PULL RESULT:\\n${$node['Git Pull via MCP'].json?.result?.content?.[0]?.text || 'No output'}\\n\\nCODEBASE FILES:\\n${($node['Read Codebase via MCP'].json?.result?.content?.[0]?.text || 'Unable to read').slice(0, 3000)}\\n\\nCODE MARKERS & RECENT COMMITS:\\n${$node['Inspect Code Markers via MCP'].json?.result?.content?.[0]?.text || 'No markers found'}\\n\\nToday's date: ${new Date().toISOString().split('T')[0]}. Generate 5-8 actionable tasks.`\n  }\n]) }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "70ff1899-f4b6-4fd5-b914-12fb0ad72451",
+            "name": "Generate Tasks (Claude AI)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                -7920,
+                1632
+            ],
+            "disabled": true,
+            "notes": "Uses Claude to analyze the codebase and produce structured task list. Add your Anthropic API key in credentials."
+        },
+        {
+            "parameters": {
+                "mode": "runOnceForEachItem",
+                "jsCode": "const inputItem = $json;\n\nconst fallbackToday = new Date().toISOString().split('T')[0];\n\nconst rawContent =\n  inputItem.content?.parts?.[0]?.text ||\n  inputItem.content ||\n  inputItem.text ||\n  '{}';\n\nlet taskData;\ntry {\n  const stripped = String(rawContent)\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/```\\s*$/i, '')\n    .trim();\n\n  taskData = JSON.parse(stripped);\n} catch (e) {\n  const jsonMatch = String(rawContent).match(/\\{[\\s\\S]*\\}/);\n  try {\n    taskData = jsonMatch ? JSON.parse(jsonMatch[0]) : null;\n  } catch (e2) {\n    taskData = null;\n  }\n}\n\nif (!taskData || typeof taskData !== 'object' || Array.isArray(taskData)) {\n  taskData = {\n    date: fallbackToday,\n    summary: 'Task generation failed',\n    tasks: []\n  };\n}\n\nconst today = new Date().toISOString().split('T')[0];\ntaskData.date = today;\ntaskData.generated_at = new Date().toISOString();\ntaskData.status = 'pending';\n\nconst tasks = Array.isArray(taskData.tasks) ? taskData.tasks : [];\n\nconst priorityEmoji = {\n  high: ':red_circle:',\n  medium: ':large_yellow_circle:',\n  low: ':large_green_circle:'\n};\n\nconst categoryEmoji = {\n  bugfix: ':bug:',\n  feature: ':sparkles:',\n  refactor: ':hammer:',\n  test: ':white_check_mark:',\n  docs: ':books:',\n  chore: ':broom:'\n};\n\nconst slackBlocks = [\n  {\n    type: 'header',\n    text: {\n      type: 'plain_text',\n      text: `:sunrise: Daily Dev Tasks — ${today}`,\n      emoji: true\n    }\n  },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*Project Status:* ${taskData.summary || 'No summary available'}`\n    }\n  },\n  { type: 'divider' }\n];\n\nfor (const task of tasks) {\n  const pEmoji = priorityEmoji[task.priority] || ':white_circle:';\n  const cEmoji = categoryEmoji[task.category] || ':pushpin:';\n\n  slackBlocks.push({\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text:\n        `${pEmoji} *${task.id || 'TASK'}* — ${cEmoji} \\`${task.category || 'task'}\\`\\n` +\n        `*${task.title || 'Untitled task'}*\\n` +\n        `${task.description || 'No description provided'}\\n` +\n        `_Est: ~${task.estimated_minutes || '?'} min_` +\n        `${task.file_hints?.length ? ` | Files: \\`${task.file_hints.join('`, `')}\\`` : ''}`\n    }\n  });\n}\n\nconst totalMins = tasks.reduce((sum, task) => sum + (Number(task.estimated_minutes) || 0), 0);\n\nslackBlocks.push({ type: 'divider' });\nslackBlocks.push({\n  type: 'context',\n  elements: [\n    {\n      type: 'mrkdwn',\n      text: `Total tasks: *${tasks.length}* | Est. total: *${totalMins} min* | Generated by n8n`\n    }\n  ]\n});\n\nconst priorityColor = {\n  high: '#dc2626',\n  medium: '#d97706',\n  low: '#16a34a'\n};\n\nlet emailHtml = `\n<html>\n  <head>\n    <style>\n      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; margin: 0; padding: 20px; color: #1e293b; }\n      .container { max-width: 680px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }\n      .header { background: #1e293b; color: white; padding: 28px 32px; }\n      .header h1 { margin: 0; font-size: 22px; font-weight: 600; }\n      .header p { margin: 6px 0 0; opacity: 0.7; font-size: 14px; }\n      .summary { padding: 20px 32px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #475569; }\n      .task { padding: 20px 32px; border-bottom: 1px solid #f1f5f9; }\n      .task:last-child { border-bottom: none; }\n      .task-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }\n      .task-id { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.05em; }\n      .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }\n      .task-title { font-size: 15px; font-weight: 600; color: #1e293b; margin: 0 0 6px; }\n      .task-desc { font-size: 13px; color: #64748b; margin: 0 0 8px; line-height: 1.5; }\n      .task-meta { font-size: 12px; color: #94a3b8; }\n      .footer { padding: 20px 32px; background: #f8fafc; font-size: 12px; color: #94a3b8; text-align: center; }\n    </style>\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"header\">\n        <h1>&#9728;&#65039; Daily Development Tasks</h1>\n        <p>${today}</p>\n      </div>\n      <div class=\"summary\">\n        &#128203; <strong>Project Status:</strong> ${taskData.summary || 'No summary available'}\n      </div>\n`;\n\nfor (const task of tasks) {\n  const pColor = priorityColor[task.priority] || '#6b7280';\n  const pLabel = (task.priority || 'medium').toUpperCase();\n  const cLabel = (task.category || 'task').toUpperCase();\n\n  emailHtml += `\n    <div class=\"task\">\n      <div class=\"task-header\">\n        <span class=\"task-id\">${task.id || 'TASK'}</span>\n        <span class=\"badge\" style=\"background:${pColor}15;color:${pColor}\">${pLabel}</span>\n        <span class=\"badge\" style=\"background:#e2e8f0;color:#475569\">${cLabel}</span>\n      </div>\n      <p class=\"task-title\">${task.title || 'Untitled task'}</p>\n      <p class=\"task-desc\">${task.description || 'No description provided'}</p>\n      <p class=\"task-meta\">\n        &#9201; ~${task.estimated_minutes || '?'} min\n        ${task.file_hints?.length ? ` &nbsp;&bull;&nbsp; &#128196; ${task.file_hints.join(', ')}` : ''}\n      </p>\n    </div>\n  `;\n}\n\nemailHtml += `\n      <div class=\"footer\">${tasks.length} tasks &bull; ~${totalMins} min estimated &bull; n8n Automation</div>\n    </div>\n  </body>\n</html>\n`;\n\nreturn {\n  json: {\n    taskData,\n    slackBlocks,\n    emailHtml,\n    emailSubject: `[Dev Tasks] ${today} — ${tasks.length} tasks queued`,\n    totalTasks: tasks.length,\n    totalMinutes: totalMins\n  }\n};"
+            },
+            "id": "af86d942-7b19-49e4-9c1a-10a8d016ae47",
+            "name": "Format Morning Notifications",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -7664,
+                1632
+            ]
+        },
+        {
+            "parameters": {
+                "mode": "runOnceForEachItem",
+                "jsCode": "const input = $json;\n\nif (!input || typeof input !== 'object' || Array.isArray(input)) {\n  throw new Error('Invalid input');\n}\n\nconst formattedTaskData =\n  input.taskData && typeof input.taskData === 'object' && !Array.isArray(input.taskData)\n    ? input.taskData\n    : input;\n\nconst tasks = Array.isArray(formattedTaskData.tasks)\n  ? formattedTaskData.tasks\n  : Array.isArray(input.tasks)\n    ? input.tasks\n    : [];\n\nconst date = formattedTaskData.date || input.date || new Date().toISOString().split('T')[0];\nconst storageKey = `tasks_${date}.json`;\nconst storagePath = `/home/bograh/Code/cloud-storage-with-s3/.n8n-tasks/${storageKey}`;\nconst totalMinutes = input.totalMinutes ?? tasks.reduce((sum, task) => sum + (Number(task?.estimated_minutes) || 0), 0);\n\nconst filePayload = {\n  saved_at: new Date().toISOString(),\n  date,\n  summary:\n    formattedTaskData.summary ||\n    input.summary ||\n    (input.emailSubject ? input.emailSubject.replace(/^\\[Dev Tasks\\]\\s*/, '') : '') ||\n    '',\n  tasks,\n  totalTasks: input.totalTasks ?? tasks.length,\n  totalMinutes,\n  status: formattedTaskData.status || input.status || 'pending',\n  generated_at: formattedTaskData.generated_at || input.generated_at || null,\n  slackBlocks: Array.isArray(input.slackBlocks) ? input.slackBlocks : [],\n  emailSubject: input.emailSubject || '',\n  emailHtml: input.emailHtml || '',\n};\n\nreturn {\n  json: {\n    ...input,\n    taskData: {\n      ...formattedTaskData,\n      date,\n      tasks,\n      totalTasks: filePayload.totalTasks,\n      totalMinutes,\n    },\n    storageKey,\n    storagePath,\n    storagePayload: JSON.stringify(filePayload, null, 2),\n  },\n};"
+            },
+            "id": "874d9725-ab34-4586-b037-7348b095e882",
+            "name": "Prepare Task Storage",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -7408,
+                1632
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Accept",
+                            "value": "application/json, text/event-stream"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "jsonrpc",
+                            "value": "2.0"
+                        },
+                        {
+                            "name": "id",
+                            "value": "4"
+                        },
+                        {
+                            "name": "method",
+                            "value": "tools/call"
+                        },
+                        {
+                            "name": "params",
+                            "value": "={{ { name: 'write_file', arguments: { path: '/home/bograh/Code/cloud-storage-with-s3/.n8n-tasks/' + $json.storageKey, content: $json.storagePayload } } }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "2867db10-049e-4c72-ae8f-bd11c3358550",
+            "name": "Save Tasks to Disk via MCP",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                -7136,
+                1632
+            ],
+            "notes": "Saves the generated task list to /home/bograh/Code/cloud-storage-with-s3/.n8n-tasks/ as a JSON file for evening retrieval."
+        },
+        {
+            "parameters": {
+                "otherOptions": {}
+            },
+            "id": "c102c75b-0434-4c1b-bef2-cfb0680b9410",
+            "name": "Send Morning Tasks to Slack",
+            "type": "n8n-nodes-base.slack",
+            "typeVersion": 2.1,
+            "position": [
+                -6880,
+                1520
+            ],
+            "webhookId": "93c8b527-effd-4192-a05d-11f38264e7d4",
+            "notes": "Configure your Slack credential and target channel."
+        },
+        {
+            "parameters": {
+                "fromEmail": "automation@ograh.xyz",
+                "toEmail": "benclanks@gmail.com",
+                "subject": "={{ $node['Format Morning Notifications'].json.emailSubject }}",
+                "html": "={{ $node['Format Morning Notifications'].json.emailHtml }}",
+                "options": {}
+            },
+            "id": "17f4d15a-2dcc-4613-9787-4536b14df450",
+            "name": "Send Morning Tasks Email",
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 2.1,
+            "position": [
+                -6880,
+                1728
+            ],
+            "webhookId": "2593ba91-70ca-40f3-8175-fe4259a527d5",
+            "credentials": {
+                "smtp": {
+                    "id": "LUfWtNDpL2Xu29Zu",
+                    "name": "SMTP account"
+                }
+            },
+            "notes": "Configure your SMTP credential. Update fromEmail and toEmail."
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Accept",
+                            "value": "application/json, text/event-stream"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "jsonrpc",
+                            "value": "2.0"
+                        },
+                        {
+                            "name": "id",
+                            "value": "5"
+                        },
+                        {
+                            "name": "method",
+                            "value": "tools/call"
+                        },
+                        {
+                            "name": "params",
+                            "value": "={{ { name: 'read_file', arguments: { path: '/home/bograh/Code/cloud-storage-with-s3/.n8n-tasks/tasks_' + new Date().toISOString().split('T')[0] + '.json' } } }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "869e8035-902a-4f27-b040-b09c7cbf4996",
+            "name": "Load Morning Tasks via MCP",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                -8640,
+                2320
+            ],
+            "notes": "Evening: loads the task file saved this morning."
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Accept",
+                            "value": "application/json, text/event-stream"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "jsonrpc",
+                            "value": "2.0"
+                        },
+                        {
+                            "name": "id",
+                            "value": "6"
+                        },
+                        {
+                            "name": "method",
+                            "value": "tools/call"
+                        },
+                        {
+                            "name": "params",
+                            "value": "={{ { name: 'run_command', arguments: { command: 'git log --since=\"today 00:00\" --stat --oneline', cwd: '/home/bograh/Code/cloud-storage-with-s3', timeout_ms: 30000 } } }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "d7ca9503-98e5-4ae0-a260-81870420943f",
+            "name": "Get Today Git Activity via MCP",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                -8384,
+                2320
+            ],
+            "notes": "Evening: gets today's commits plus per-commit file stats."
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Accept",
+                            "value": "application/json, text/event-stream"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "jsonrpc",
+                            "value": "2.0"
+                        },
+                        {
+                            "name": "id",
+                            "value": "7"
+                        },
+                        {
+                            "name": "method",
+                            "value": "tools/call"
+                        },
+                        {
+                            "name": "params",
+                            "value": "={{ { name: 'run_command', arguments: { command: 'printf \"remaining todos: \" && (grep -rn \"TODO\\\\|FIXME\\\\|HACK\" --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.js\" --include=\"*.jsx\" --include=\"*.py\" --include=\"*.go\" . | wc -l || true) && printf \"\\n\" && (grep -rn \"TODO\\\\|FIXME\" --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.js\" --include=\"*.jsx\" --include=\"*.py\" --include=\"*.go\" . | head -20 || true)', cwd: '/home/bograh/Code/cloud-storage-with-s3', timeout_ms: 30000 } } }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "ebb7af52-bd12-47bf-bb51-2d3bec032108",
+            "name": "Count Remaining TODOs via MCP",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                -8112,
+                2320
+            ],
+            "notes": "Evening: counts remaining TODOs to measure progress."
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.anthropic.com/v1/messages",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "x-api-key",
+                            "value": "={{ $credentials.anthropicApi.apiKey }}"
+                        },
+                        {
+                            "name": "anthropic-version",
+                            "value": "2023-06-01"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "model",
+                            "value": "claude-opus-4-5"
+                        },
+                        {
+                            "name": "max_tokens",
+                            "value": "2500"
+                        },
+                        {
+                            "name": "system",
+                            "value": "You are a senior engineering manager writing an end-of-day development report. Compare the morning task list against today's git activity and code state. Return a valid JSON object only — no markdown, no preamble. Schema: { \"date\": \"YYYY-MM-DD\", \"overall_completion\": 0-100, \"productivity_score\": \"A|B|C|D\", \"executive_summary\": \"2-3 sentences\", \"tasks\": [ { \"id\": \"T001\", \"title\": \"...\", \"status\": \"completed|partial|not_started\", \"evidence\": \"what git activity or code change supports this status\", \"completion_pct\": 0-100 } ], \"unplanned_work\": [ { \"description\": \"...\", \"impact\": \"positive|neutral|negative\" } ], \"blockers\": [ \"...\" ], \"tomorrow_suggestions\": [ \"...\" ], \"metrics\": { \"commits_today\": 0, \"files_changed\": 0, \"todos_resolved\": 0 } }"
+                        },
+                        {
+                            "name": "messages",
+                            "value": "={{ JSON.stringify([\n  {\n    role: 'user',\n    content: `Generate the end-of-day development report for ${new Date().toISOString().split('T')[0]}.\\n\\nMORNING TASK LIST:\\n${$node['Load Morning Tasks via MCP'].json?.result?.content?.[0]?.text || 'Could not load morning tasks'}\\n\\nTODAY GIT ACTIVITY:\\n${$node['Get Today Git Activity via MCP'].json?.result?.content?.[0]?.text || 'No git activity'}\\n\\nREMAINING TODOs:\\n${$node['Count Remaining TODOs via MCP'].json?.result?.content?.[0]?.text || 'Unknown'}\\n\\nCompare each task against the git evidence and assess completion.`\n  }\n]) }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "ad131d13-d9f3-41f0-9af1-f3f6e778597e",
+            "name": "Analyze Completion (Claude AI)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                -7856,
+                2320
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const rawContent = items[0].json?.content?.[0]?.text || '{}';\nlet report;\ntry {\n  report = JSON.parse(rawContent);\n} catch (e) {\n  const jsonMatch = rawContent.match(/\\{[\\s\\S]*\\}/);\n  report = jsonMatch ? JSON.parse(jsonMatch[0]) : { date: new Date().toISOString().split('T')[0], overall_completion: 0, executive_summary: 'Report generation failed.', tasks: [], tomorrow_suggestions: [], metrics: {} };\n}\n\nconst today = new Date().toISOString().split('T')[0];\nconst scoreColor = { A: '#16a34a', B: '#2563eb', C: '#d97706', D: '#dc2626' };\nconst statusEmoji = { completed: '&#9989;', partial: '&#9203;', not_started: '&#10060;' };\nconst statusColor = { completed: '#16a34a', partial: '#d97706', not_started: '#dc2626' };\nconst impactColor = { positive: '#16a34a', neutral: '#6b7280', negative: '#dc2626' };\n\nconst pct = report.overall_completion || 0;\nconst score = report.productivity_score || 'C';\nconst sColor = scoreColor[score] || '#6b7280';\n\n// Build email HTML report\nlet emailHtml = `\n<html><head><style>\nbody { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; margin: 0; padding: 20px; color: #1e293b; }\n.container { max-width: 680px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }\n.header { background: #1e293b; color: white; padding: 28px 32px; }\n.header h1 { margin: 0 0 6px; font-size: 22px; }\n.header p { margin: 0; opacity: 0.7; font-size: 14px; }\n.score-bar { padding: 24px 32px; display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #f1f5f9; }\n.score-badge { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: white; flex-shrink: 0; }\n.progress-wrap { flex: 1; }\n.progress-label { font-size: 13px; color: #64748b; margin-bottom: 6px; }\n.progress-bar { background: #e2e8f0; border-radius: 9999px; height: 12px; overflow: hidden; }\n.progress-fill { height: 100%; border-radius: 9999px; transition: width 0.3s; }\n.progress-pct { font-size: 22px; font-weight: 700; color: #1e293b; margin-top: 4px; }\n.summary { padding: 20px 32px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #475569; line-height: 1.6; }\n.section { padding: 20px 32px; border-bottom: 1px solid #f1f5f9; }\n.section h3 { margin: 0 0 14px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; }\n.task-row { display: flex; gap: 12px; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid #f8fafc; }\n.task-row:last-child { margin-bottom: 0; border-bottom: none; }\n.task-status { flex-shrink: 0; padding-top: 2px; font-size: 16px; }\n.task-title { font-size: 14px; font-weight: 600; color: #1e293b; }\n.task-evidence { font-size: 12px; color: #94a3b8; margin-top: 3px; }\n.task-pct { flex-shrink: 0; font-size: 13px; font-weight: 700; }\n.metrics { display: flex; gap: 16px; flex-wrap: wrap; }\n.metric { flex: 1; min-width: 120px; background: #f8fafc; border-radius: 8px; padding: 14px 16px; }\n.metric-val { font-size: 24px; font-weight: 700; color: #1e293b; }\n.metric-label { font-size: 12px; color: #94a3b8; margin-top: 2px; }\n.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin: 2px 4px 2px 0; }\n.footer { padding: 20px 32px; background: #f8fafc; font-size: 12px; color: #94a3b8; text-align: center; }\n</style></head><body>\n<div class='container'>\n<div class='header'>\n  <h1>&#127755; End-of-Day Dev Report</h1>\n  <p>${today}</p>\n</div>\n<div class='score-bar'>\n  <div class='score-badge' style='background:${sColor}'>${score}</div>\n  <div class='progress-wrap'>\n    <div class='progress-label'>Overall completion</div>\n    <div class='progress-bar'><div class='progress-fill' style='width:${pct}%;background:${sColor}'></div></div>\n    <div class='progress-pct'>${pct}%</div>\n  </div>\n</div>\n<div class='summary'>${report.executive_summary || ''}</div>\n`;\n\n// Task breakdown\nemailHtml += `<div class='section'><h3>Task Breakdown</h3>`;\n(report.tasks || []).forEach(task => {\n  const tColor = statusColor[task.status] || '#6b7280';\n  const tEmoji = statusEmoji[task.status] || '&#9898;';\n  emailHtml += `\n<div class='task-row'>\n  <div class='task-status'>${tEmoji}</div>\n  <div style='flex:1'>\n    <div class='task-title'>${task.id} — ${task.title}</div>\n    <div class='task-evidence'>${task.evidence || ''}</div>\n  </div>\n  <div class='task-pct' style='color:${tColor}'>${task.completion_pct || 0}%</div>\n</div>`;\n});\nemailHtml += `</div>`;\n\n// Metrics\nconst m = report.metrics || {};\nemailHtml += `\n<div class='section'><h3>Today's Metrics</h3>\n<div class='metrics'>\n  <div class='metric'><div class='metric-val'>${m.commits_today ?? '?'}</div><div class='metric-label'>Commits</div></div>\n  <div class='metric'><div class='metric-val'>${m.files_changed ?? '?'}</div><div class='metric-label'>Files changed</div></div>\n  <div class='metric'><div class='metric-val'>${m.todos_resolved ?? '?'}</div><div class='metric-label'>TODOs resolved</div></div>\n  <div class='metric'><div class='metric-val'>${(report.tasks||[]).filter(t=>t.status==='completed').length}/${(report.tasks||[]).length}</div><div class='metric-label'>Tasks done</div></div>\n</div></div>`;\n\n// Blockers\nif ((report.blockers || []).length > 0) {\n  emailHtml += `<div class='section'><h3>Blockers</h3>`;\n  (report.blockers || []).forEach(b => {\n    emailHtml += `<p style='margin:0 0 8px;font-size:14px;color:#dc2626'>&#9888;&#65039; ${b}</p>`;\n  });\n  emailHtml += `</div>`;\n}\n\n// Unplanned work\nif ((report.unplanned_work || []).length > 0) {\n  emailHtml += `<div class='section'><h3>Unplanned Work</h3>`;\n  (report.unplanned_work || []).forEach(uw => {\n    const iColor = impactColor[uw.impact] || '#6b7280';\n    emailHtml += `<p style='margin:0 0 8px;font-size:14px;color:#1e293b'>&#128203; ${uw.description} <span class='tag' style='background:${iColor}20;color:${iColor}'>${uw.impact || 'neutral'}</span></p>`;\n  });\n  emailHtml += `</div>`;\n}\n\n// Tomorrow suggestions\nif ((report.tomorrow_suggestions || []).length > 0) {\n  emailHtml += `<div class='section'><h3>Suggestions for Tomorrow</h3>`;\n  (report.tomorrow_suggestions || []).forEach(s => {\n    emailHtml += `<p style='margin:0 0 8px;font-size:14px;color:#1e293b'>&#8594; ${s}</p>`;\n  });\n  emailHtml += `</div>`;\n}\n\nemailHtml += `\n<div class='footer'>n8n + Claude Automation &bull; ${today}</div>\n</div></body></html>`;\n\nreturn [{\n  json: {\n    report,\n    emailHtml,\n    emailSubject: `[Dev Report] ${today} — ${pct}% complete (${score})`,\n    completionPct: pct,\n    productivityScore: score\n  }\n}];"
+            },
+            "id": "9a69e296-0430-4e74-809e-342fd4159e83",
+            "name": "Format Evening Report",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -7600,
+                2320
+            ]
+        },
+        {
+            "parameters": {
+                "fromEmail": "automation@yourcompany.com",
+                "toEmail": "you@yourcompany.com",
+                "subject": "={{ $json.emailSubject }}",
+                "html": "={{ $json.emailHtml }}",
+                "options": {}
+            },
+            "id": "e51b7ea8-d1c7-48a8-9712-0408e39d1db2",
+            "name": "Send Evening Report Email",
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 2.1,
+            "position": [
+                -7344,
+                2320
+            ],
+            "webhookId": "19724565-bcf0-49a2-9aec-b158a48d4901",
+            "credentials": {
+                "smtp": {
+                    "id": "LUfWtNDpL2Xu29Zu",
+                    "name": "SMTP account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Accept",
+                            "value": "application/json, text/event-stream"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "jsonrpc",
+                            "value": "2.0"
+                        },
+                        {
+                            "name": "id",
+                            "value": "8"
+                        },
+                        {
+                            "name": "method",
+                            "value": "tools/call"
+                        },
+                        {
+                            "name": "params",
+                            "value": "={{ { name: 'write_file', arguments: { path: '/home/bograh/Code/cloud-storage-with-s3/.n8n-tasks/report_' + new Date().toISOString().split('T')[0] + '.json', content: JSON.stringify($json.report, null, 2) } } }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "2702e28e-28b5-451f-b32c-653c1ac076d8",
+            "name": "Save Report to Disk via MCP",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                -7072,
+                2320
+            ],
+            "notes": "Archives the evening report alongside the morning task file."
+        },
+        {
+            "parameters": {
+                "modelId": {
+                    "__rl": true,
+                    "value": "gpt-5-nano",
+                    "mode": "list",
+                    "cachedResultName": "GPT-5-NANO"
+                },
+                "responses": {
+                    "values": [
+                        {
+                            "role": "system",
+                            "content": "You are a senior software engineer acting as a daily task planner. Analyze the provided codebase structure, recent git activity, and code markers (TODOs, FIXMEs, etc.) and generate a realistic, prioritized list of development tasks for today. Return your response as a valid JSON object only — no markdown, no preamble. Schema: { \"date\": \"YYYY-MM-DD\", \"summary\": \"one sentence project status\", \"tasks\": [ { \"id\": \"T001\", \"priority\": \"high|medium|low\", \"category\": \"bugfix|feature|refactor|test|docs|chore\", \"title\": \"short task title\", \"description\": \"2-3 sentence description\", \"file_hints\": [\"path/to/relevant/file\"], \"estimated_minutes\": 30 } ] }"
+                        },
+                        {
+                            "content": "=Analyze this codebase and generate today's development tasks.\nGIT PULL RESULT:\n    {{ $('Git Pull via MCP').item.json.data }}?.result?.content?.[0]?.text || 'No Output').slice(0, 3000)}\n    \nCODEBASE FILES:\n    {{ $('Read Codebase via MCP').item.json.data }}?.result?.content?.[0]?.text || 'Unable to read').slice(0, 3000)}\n    \nCODE MARKERS & RECENT COMMITS:\n    {{ $('Inspect Code Markers via MCP').item.json.data }}?.result?.content?.[0]?.text || 'No markers found').slice(0, 3000)}\n    \nToday's date: ${new Date().toISOString().split('T')[0]}. Generate 5-8 actionable tasks."
+                        }
+                    ]
+                },
+                "builtInTools": {},
+                "options": {}
+            },
+            "id": "52936496-0474-4b30-98f1-9f444d09ef16",
+            "name": "Generate Weekly Report",
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 2.1,
+            "position": [
+                -8048,
+                1440
+            ],
+            "credentials": {
+                "openAiApi": {
+                    "id": "BJFL4zyDm6FVnNii",
+                    "name": "OpenAi account"
+                }
+            },
+            "disabled": true
+        },
+        {
+            "parameters": {
+                "modelId": {
+                    "__rl": true,
+                    "value": "models/gemini-2.5-flash",
+                    "mode": "list",
+                    "cachedResultName": "models/gemini-2.5-flash"
+                },
+                "messages": {
+                    "values": [
+                        {
+                            "content": "You are a senior software engineer acting as a daily task planner. Analyze the provided codebase structure, recent git activity, and code markers (TODOs, FIXMEs, etc.) and generate a realistic, prioritized list of development tasks for today. Return your response as a valid JSON object only — no markdown, no preamble. Schema: { \"date\": \"YYYY-MM-DD\", \"summary\": \"one sentence project status\", \"tasks\": [ { \"id\": \"T001\", \"priority\": \"high|medium|low\", \"category\": \"bugfix|feature|refactor|test|docs|chore\", \"title\": \"short task title\", \"description\": \"2-3 sentence description\", \"file_hints\": [\"path/to/relevant/file\"], \"estimated_minutes\": 30 } ] }",
+                            "role": "model"
+                        },
+                        {
+                            "content": "=Analyze this codebase and generate today's development tasks.\nGIT PULL RESULT:\n    {{ $('Git Pull via MCP').item.json.data }}?.result?.content?.[0]?.text || 'No Output').slice(0, 3000)}\n    \nCODEBASE FILES:\n    {{ $('Read Codebase via MCP').item.json.data }}?.result?.content?.[0]?.text || 'Unable to read').slice(0, 3000)}\n    \nCODE MARKERS & RECENT COMMITS:\n    {{ $('Inspect Code Markers via MCP').item.json.data }}?.result?.content?.[0]?.text || 'No markers found').slice(0, 3000)}\n    \nToday's date: ${new Date().toISOString().split('T')[0]}. Generate 5-8 actionable tasks."
+                        }
+                    ]
+                },
+                "builtInTools": {},
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.googleGemini",
+            "typeVersion": 1.1,
+            "position": [
+                -7968,
+                1904
+            ],
+            "id": "37bf0dd9-1163-4476-9a95-062ca992576b",
+            "name": "Message a model",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "ji1MqVGPpDEsZAR6",
+                    "name": "Google Gemini(PaLM) Api account"
+                }
+            }
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "Morning Trigger (7:00 AM)": {
+            "main": [
+                [
+                    {
+                        "node": "Git Pull via MCP",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Git Pull via MCP": {
+            "main": [
+                [
+                    {
+                        "node": "Read Codebase via MCP",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Read Codebase via MCP": {
+            "main": [
+                [
+                    {
+                        "node": "Inspect Code Markers via MCP",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Inspect Code Markers via MCP": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Tasks (Claude AI)",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Generate Weekly Report",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Message a model",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Tasks (Claude AI)": {
+            "main": [
+                [
+                    {
+                        "node": "Format Morning Notifications",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Morning Notifications": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Task Storage",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Task Storage": {
+            "main": [
+                [
+                    {
+                        "node": "Save Tasks to Disk via MCP",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Save Tasks to Disk via MCP": {
+            "main": [
+                [
+                    {
+                        "node": "Send Morning Tasks to Slack",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Send Morning Tasks Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Evening Trigger (6:00 PM)": {
+            "main": [
+                [
+                    {
+                        "node": "Load Morning Tasks via MCP",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Load Morning Tasks via MCP": {
+            "main": [
+                [
+                    {
+                        "node": "Get Today Git Activity via MCP",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Today Git Activity via MCP": {
+            "main": [
+                [
+                    {
+                        "node": "Count Remaining TODOs via MCP",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Count Remaining TODOs via MCP": {
+            "main": [
+                [
+                    {
+                        "node": "Analyze Completion (Claude AI)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Analyze Completion (Claude AI)": {
+            "main": [
+                [
+                    {
+                        "node": "Format Evening Report",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Evening Report": {
+            "main": [
+                [
+                    {
+                        "node": "Send Evening Report Email",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Save Report to Disk via MCP",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Weekly Report": {
+            "main": [
+                [
+                    {
+                        "node": "Format Morning Notifications",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Message a model": {
+            "main": [
+                [
+                    {
+                        "node": "Format Morning Notifications",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1",
+        "binaryMode": "separate",
+        "availableInMCP": false
+    },
+    "versionId": "cada601d-6546-4301-99ef-92cba4874b67",
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "e89e159d2f6f362123df5e67fa3798fc88526b3e29e7da8cdf7ecb6fcc1848a1"
+    },
+    "id": "BgEG2FLn60tA04IQ",
+    "tags": []
+}

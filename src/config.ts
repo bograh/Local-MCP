@@ -4,10 +4,11 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const defaultFsRoot = process.cwd();
 
 const configSchema = z.object({
   port: z.coerce.number().default(3000),
-  fsRoot: z.string().default("/host-home"),
+  fsRoot: z.string().default(defaultFsRoot),
   authToken: z.string().optional(),
   nodeEnv: z.string().default("development"),
   logLevel: z.string().default("debug"),
