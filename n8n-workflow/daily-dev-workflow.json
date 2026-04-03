@@ -16,8 +16,8 @@
             "type": "n8n-nodes-base.scheduleTrigger",
             "typeVersion": 1.1,
             "position": [
-                -8960,
-                1632
+                -9024,
+                1472
             ]
         },
         {
@@ -35,8 +35,8 @@
             "type": "n8n-nodes-base.scheduleTrigger",
             "typeVersion": 1.1,
             "position": [
-                -8896,
-                2320
+                -8864,
+                2336
             ]
         },
         {
@@ -192,89 +192,6 @@
         {
             "parameters": {
                 "method": "POST",
-                "url": "https://api.anthropic.com/v1/messages",
-                "sendHeaders": true,
-                "headerParameters": {
-                    "parameters": [
-                        {
-                            "name": "x-api-key",
-                            "value": "={{ $credentials.anthropicApi.apiKey }}"
-                        },
-                        {
-                            "name": "anthropic-version",
-                            "value": "2023-06-01"
-                        },
-                        {
-                            "name": "Content-Type",
-                            "value": "application/json"
-                        }
-                    ]
-                },
-                "sendBody": true,
-                "bodyParameters": {
-                    "parameters": [
-                        {
-                            "name": "model",
-                            "value": "claude-opus-4-5"
-                        },
-                        {
-                            "name": "max_tokens",
-                            "value": "2000"
-                        },
-                        {
-                            "name": "system",
-                            "value": "You are a senior software engineer acting as a daily task planner. Analyze the provided codebase structure, recent git activity, and code markers (TODOs, FIXMEs, etc.) and generate a realistic, prioritized list of development tasks for today. Return your response as a valid JSON object only — no markdown, no preamble. Schema: { \"date\": \"YYYY-MM-DD\", \"summary\": \"one sentence project status\", \"tasks\": [ { \"id\": \"T001\", \"priority\": \"high|medium|low\", \"category\": \"bugfix|feature|refactor|test|docs|chore\", \"title\": \"short task title\", \"description\": \"2-3 sentence description\", \"file_hints\": [\"path/to/relevant/file\"], \"estimated_minutes\": 30 } ] }"
-                        },
-                        {
-                            "name": "messages",
-                            "value": "={{ JSON.stringify([\n  {\n    role: 'user',\n    content: `Analyze this codebase and generate today's development tasks.\\n\\nGIT PULL RESULT:\\n${$node['Git Pull via MCP'].json?.result?.content?.[0]?.text || 'No output'}\\n\\nCODEBASE FILES:\\n${($node['Read Codebase via MCP'].json?.result?.content?.[0]?.text || 'Unable to read').slice(0, 3000)}\\n\\nCODE MARKERS & RECENT COMMITS:\\n${$node['Inspect Code Markers via MCP'].json?.result?.content?.[0]?.text || 'No markers found'}\\n\\nToday's date: ${new Date().toISOString().split('T')[0]}. Generate 5-8 actionable tasks.`\n  }\n]) }}"
-                        }
-                    ]
-                },
-                "options": {}
-            },
-            "id": "70ff1899-f4b6-4fd5-b914-12fb0ad72451",
-            "name": "Generate Tasks (Claude AI)",
-            "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 4.1,
-            "position": [
-                -7920,
-                1632
-            ],
-            "disabled": true,
-            "notes": "Uses Claude to analyze the codebase and produce structured task list. Add your Anthropic API key in credentials."
-        },
-        {
-            "parameters": {
-                "mode": "runOnceForEachItem",
-                "jsCode": "const inputItem = $json;\n\nconst fallbackToday = new Date().toISOString().split('T')[0];\n\nconst rawContent =\n  inputItem.content?.parts?.[0]?.text ||\n  inputItem.content ||\n  inputItem.text ||\n  '{}';\n\nlet taskData;\ntry {\n  const stripped = String(rawContent)\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/```\\s*$/i, '')\n    .trim();\n\n  taskData = JSON.parse(stripped);\n} catch (e) {\n  const jsonMatch = String(rawContent).match(/\\{[\\s\\S]*\\}/);\n  try {\n    taskData = jsonMatch ? JSON.parse(jsonMatch[0]) : null;\n  } catch (e2) {\n    taskData = null;\n  }\n}\n\nif (!taskData || typeof taskData !== 'object' || Array.isArray(taskData)) {\n  taskData = {\n    date: fallbackToday,\n    summary: 'Task generation failed',\n    tasks: []\n  };\n}\n\nconst today = new Date().toISOString().split('T')[0];\ntaskData.date = today;\ntaskData.generated_at = new Date().toISOString();\ntaskData.status = 'pending';\n\nconst tasks = Array.isArray(taskData.tasks) ? taskData.tasks : [];\n\nconst priorityEmoji = {\n  high: ':red_circle:',\n  medium: ':large_yellow_circle:',\n  low: ':large_green_circle:'\n};\n\nconst categoryEmoji = {\n  bugfix: ':bug:',\n  feature: ':sparkles:',\n  refactor: ':hammer:',\n  test: ':white_check_mark:',\n  docs: ':books:',\n  chore: ':broom:'\n};\n\nconst slackBlocks = [\n  {\n    type: 'header',\n    text: {\n      type: 'plain_text',\n      text: `:sunrise: Daily Dev Tasks — ${today}`,\n      emoji: true\n    }\n  },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*Project Status:* ${taskData.summary || 'No summary available'}`\n    }\n  },\n  { type: 'divider' }\n];\n\nfor (const task of tasks) {\n  const pEmoji = priorityEmoji[task.priority] || ':white_circle:';\n  const cEmoji = categoryEmoji[task.category] || ':pushpin:';\n\n  slackBlocks.push({\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text:\n        `${pEmoji} *${task.id || 'TASK'}* — ${cEmoji} \\`${task.category || 'task'}\\`\\n` +\n        `*${task.title || 'Untitled task'}*\\n` +\n        `${task.description || 'No description provided'}\\n` +\n        `_Est: ~${task.estimated_minutes || '?'} min_` +\n        `${task.file_hints?.length ? ` | Files: \\`${task.file_hints.join('`, `')}\\`` : ''}`\n    }\n  });\n}\n\nconst totalMins = tasks.reduce((sum, task) => sum + (Number(task.estimated_minutes) || 0), 0);\n\nslackBlocks.push({ type: 'divider' });\nslackBlocks.push({\n  type: 'context',\n  elements: [\n    {\n      type: 'mrkdwn',\n      text: `Total tasks: *${tasks.length}* | Est. total: *${totalMins} min* | Generated by n8n`\n    }\n  ]\n});\n\nconst priorityColor = {\n  high: '#dc2626',\n  medium: '#d97706',\n  low: '#16a34a'\n};\n\nlet emailHtml = `\n<html>\n  <head>\n    <style>\n      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; margin: 0; padding: 20px; color: #1e293b; }\n      .container { max-width: 680px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }\n      .header { background: #1e293b; color: white; padding: 28px 32px; }\n      .header h1 { margin: 0; font-size: 22px; font-weight: 600; }\n      .header p { margin: 6px 0 0; opacity: 0.7; font-size: 14px; }\n      .summary { padding: 20px 32px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #475569; }\n      .task { padding: 20px 32px; border-bottom: 1px solid #f1f5f9; }\n      .task:last-child { border-bottom: none; }\n      .task-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }\n      .task-id { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.05em; }\n      .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }\n      .task-title { font-size: 15px; font-weight: 600; color: #1e293b; margin: 0 0 6px; }\n      .task-desc { font-size: 13px; color: #64748b; margin: 0 0 8px; line-height: 1.5; }\n      .task-meta { font-size: 12px; color: #94a3b8; }\n      .footer { padding: 20px 32px; background: #f8fafc; font-size: 12px; color: #94a3b8; text-align: center; }\n    </style>\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"header\">\n        <h1>&#9728;&#65039; Daily Development Tasks</h1>\n        <p>${today}</p>\n      </div>\n      <div class=\"summary\">\n        &#128203; <strong>Project Status:</strong> ${taskData.summary || 'No summary available'}\n      </div>\n`;\n\nfor (const task of tasks) {\n  const pColor = priorityColor[task.priority] || '#6b7280';\n  const pLabel = (task.priority || 'medium').toUpperCase();\n  const cLabel = (task.category || 'task').toUpperCase();\n\n  emailHtml += `\n    <div class=\"task\">\n      <div class=\"task-header\">\n        <span class=\"task-id\">${task.id || 'TASK'}</span>\n        <span class=\"badge\" style=\"background:${pColor}15;color:${pColor}\">${pLabel}</span>\n        <span class=\"badge\" style=\"background:#e2e8f0;color:#475569\">${cLabel}</span>\n      </div>\n      <p class=\"task-title\">${task.title || 'Untitled task'}</p>\n      <p class=\"task-desc\">${task.description || 'No description provided'}</p>\n      <p class=\"task-meta\">\n        &#9201; ~${task.estimated_minutes || '?'} min\n        ${task.file_hints?.length ? ` &nbsp;&bull;&nbsp; &#128196; ${task.file_hints.join(', ')}` : ''}\n      </p>\n    </div>\n  `;\n}\n\nemailHtml += `\n      <div class=\"footer\">${tasks.length} tasks &bull; ~${totalMins} min estimated &bull; n8n Automation</div>\n    </div>\n  </body>\n</html>\n`;\n\nreturn {\n  json: {\n    taskData,\n    slackBlocks,\n    emailHtml,\n    emailSubject: `[Dev Tasks] ${today} — ${tasks.length} tasks queued`,\n    totalTasks: tasks.length,\n    totalMinutes: totalMins\n  }\n};"
-            },
-            "id": "af86d942-7b19-49e4-9c1a-10a8d016ae47",
-            "name": "Format Morning Notifications",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                -7664,
-                1632
-            ]
-        },
-        {
-            "parameters": {
-                "mode": "runOnceForEachItem",
-                "jsCode": "const input = $json;\n\nif (!input || typeof input !== 'object' || Array.isArray(input)) {\n  throw new Error('Invalid input');\n}\n\nconst formattedTaskData =\n  input.taskData && typeof input.taskData === 'object' && !Array.isArray(input.taskData)\n    ? input.taskData\n    : input;\n\nconst tasks = Array.isArray(formattedTaskData.tasks)\n  ? formattedTaskData.tasks\n  : Array.isArray(input.tasks)\n    ? input.tasks\n    : [];\n\nconst date = formattedTaskData.date || input.date || new Date().toISOString().split('T')[0];\nconst storageKey = `tasks_${date}.json`;\nconst storagePath = `/home/bograh/Code/cloud-storage-with-s3/.n8n-tasks/${storageKey}`;\nconst totalMinutes = input.totalMinutes ?? tasks.reduce((sum, task) => sum + (Number(task?.estimated_minutes) || 0), 0);\n\nconst filePayload = {\n  saved_at: new Date().toISOString(),\n  date,\n  summary:\n    formattedTaskData.summary ||\n    input.summary ||\n    (input.emailSubject ? input.emailSubject.replace(/^\\[Dev Tasks\\]\\s*/, '') : '') ||\n    '',\n  tasks,\n  totalTasks: input.totalTasks ?? tasks.length,\n  totalMinutes,\n  status: formattedTaskData.status || input.status || 'pending',\n  generated_at: formattedTaskData.generated_at || input.generated_at || null,\n  slackBlocks: Array.isArray(input.slackBlocks) ? input.slackBlocks : [],\n  emailSubject: input.emailSubject || '',\n  emailHtml: input.emailHtml || '',\n};\n\nreturn {\n  json: {\n    ...input,\n    taskData: {\n      ...formattedTaskData,\n      date,\n      tasks,\n      totalTasks: filePayload.totalTasks,\n      totalMinutes,\n    },\n    storageKey,\n    storagePath,\n    storagePayload: JSON.stringify(filePayload, null, 2),\n  },\n};"
-            },
-            "id": "874d9725-ab34-4586-b037-7348b095e882",
-            "name": "Prepare Task Storage",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                -7408,
-                1632
-            ]
-        },
-        {
-            "parameters": {
-                "method": "POST",
                 "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
                 "sendHeaders": true,
                 "headerParameters": {
@@ -324,6 +241,14 @@
         },
         {
             "parameters": {
+                "select": "channel",
+                "channelId": {
+                    "__rl": true,
+                    "value": "C0AQFLP94LT",
+                    "mode": "list",
+                    "cachedResultName": "mcp"
+                },
+                "text": "={{ $node['Format Morning Notifications'].json.slackText }}",
                 "otherOptions": {}
             },
             "id": "c102c75b-0434-4c1b-bef2-cfb0680b9410",
@@ -335,6 +260,12 @@
                 1520
             ],
             "webhookId": "93c8b527-effd-4192-a05d-11f38264e7d4",
+            "credentials": {
+                "slackApi": {
+                    "id": "zC0CykQkcHXXZ4tK",
+                    "name": "Slack account"
+                }
+            },
             "notes": "Configure your Slack credential and target channel."
         },
         {
@@ -407,8 +338,8 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.1,
             "position": [
-                -8640,
-                2320
+                -8624,
+                2160
             ],
             "notes": "Evening: loads the task file saved this morning."
         },
@@ -457,60 +388,10 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.1,
             "position": [
-                -8384,
-                2320
+                -8368,
+                2160
             ],
             "notes": "Evening: gets today's commits plus per-commit file stats."
-        },
-        {
-            "parameters": {
-                "method": "POST",
-                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
-                "sendHeaders": true,
-                "headerParameters": {
-                    "parameters": [
-                        {
-                            "name": "Accept",
-                            "value": "application/json, text/event-stream"
-                        },
-                        {
-                            "name": "Content-Type",
-                            "value": "application/json"
-                        }
-                    ]
-                },
-                "sendBody": true,
-                "bodyParameters": {
-                    "parameters": [
-                        {
-                            "name": "jsonrpc",
-                            "value": "2.0"
-                        },
-                        {
-                            "name": "id",
-                            "value": "7"
-                        },
-                        {
-                            "name": "method",
-                            "value": "tools/call"
-                        },
-                        {
-                            "name": "params",
-                            "value": "={{ { name: 'run_command', arguments: { command: 'printf \"remaining todos: \" && (grep -rn \"TODO\\\\|FIXME\\\\|HACK\" --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.js\" --include=\"*.jsx\" --include=\"*.py\" --include=\"*.go\" . | wc -l || true) && printf \"\\n\" && (grep -rn \"TODO\\\\|FIXME\" --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.js\" --include=\"*.jsx\" --include=\"*.py\" --include=\"*.go\" . | head -20 || true)', cwd: '/home/bograh/Code/cloud-storage-with-s3', timeout_ms: 30000 } } }}"
-                        }
-                    ]
-                },
-                "options": {}
-            },
-            "id": "ebb7af52-bd12-47bf-bb51-2d3bec032108",
-            "name": "Count Remaining TODOs via MCP",
-            "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 4.1,
-            "position": [
-                -8112,
-                2320
-            ],
-            "notes": "Evening: counts remaining TODOs to measure progress."
         },
         {
             "parameters": {
@@ -561,8 +442,8 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.1,
             "position": [
-                -7856,
-                2320
+                -7840,
+                2160
             ]
         },
         {
@@ -574,8 +455,8 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -7600,
-                2320
+                -7584,
+                2160
             ]
         },
         {
@@ -591,8 +472,8 @@
             "type": "n8n-nodes-base.emailSend",
             "typeVersion": 2.1,
             "position": [
-                -7344,
-                2320
+                -7328,
+                2160
             ],
             "webhookId": "19724565-bcf0-49a2-9aec-b158a48d4901",
             "credentials": {
@@ -647,48 +528,10 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.1,
             "position": [
-                -7072,
-                2320
+                -7056,
+                2160
             ],
             "notes": "Archives the evening report alongside the morning task file."
-        },
-        {
-            "parameters": {
-                "modelId": {
-                    "__rl": true,
-                    "value": "gpt-5-nano",
-                    "mode": "list",
-                    "cachedResultName": "GPT-5-NANO"
-                },
-                "responses": {
-                    "values": [
-                        {
-                            "role": "system",
-                            "content": "You are a senior software engineer acting as a daily task planner. Analyze the provided codebase structure, recent git activity, and code markers (TODOs, FIXMEs, etc.) and generate a realistic, prioritized list of development tasks for today. Return your response as a valid JSON object only — no markdown, no preamble. Schema: { \"date\": \"YYYY-MM-DD\", \"summary\": \"one sentence project status\", \"tasks\": [ { \"id\": \"T001\", \"priority\": \"high|medium|low\", \"category\": \"bugfix|feature|refactor|test|docs|chore\", \"title\": \"short task title\", \"description\": \"2-3 sentence description\", \"file_hints\": [\"path/to/relevant/file\"], \"estimated_minutes\": 30 } ] }"
-                        },
-                        {
-                            "content": "=Analyze this codebase and generate today's development tasks.\nGIT PULL RESULT:\n    {{ $('Git Pull via MCP').item.json.data }}?.result?.content?.[0]?.text || 'No Output').slice(0, 3000)}\n    \nCODEBASE FILES:\n    {{ $('Read Codebase via MCP').item.json.data }}?.result?.content?.[0]?.text || 'Unable to read').slice(0, 3000)}\n    \nCODE MARKERS & RECENT COMMITS:\n    {{ $('Inspect Code Markers via MCP').item.json.data }}?.result?.content?.[0]?.text || 'No markers found').slice(0, 3000)}\n    \nToday's date: ${new Date().toISOString().split('T')[0]}. Generate 5-8 actionable tasks."
-                        }
-                    ]
-                },
-                "builtInTools": {},
-                "options": {}
-            },
-            "id": "52936496-0474-4b30-98f1-9f444d09ef16",
-            "name": "Generate Weekly Report",
-            "type": "@n8n/n8n-nodes-langchain.openAi",
-            "typeVersion": 2.1,
-            "position": [
-                -8048,
-                1440
-            ],
-            "credentials": {
-                "openAiApi": {
-                    "id": "BJFL4zyDm6FVnNii",
-                    "name": "OpenAi account"
-                }
-            },
-            "disabled": true
         },
         {
             "parameters": {
@@ -715,8 +558,8 @@
             "type": "@n8n/n8n-nodes-langchain.googleGemini",
             "typeVersion": 1.1,
             "position": [
-                -7968,
-                1904
+                -7984,
+                1632
             ],
             "id": "37bf0dd9-1163-4476-9a95-062ca992576b",
             "name": "Message a model",
@@ -726,6 +569,175 @@
                     "name": "Google Gemini(PaLM) Api account"
                 }
             }
+        },
+        {
+            "parameters": {
+                "mode": "runOnceForEachItem",
+                "jsCode": "const input = $json;\n\nif (!input || typeof input !== 'object' || Array.isArray(input)) {\n  throw new Error('Invalid input');\n}\n\nconst formattedTaskData =\n  input.taskData && typeof input.taskData === 'object' && !Array.isArray(input.taskData)\n    ? input.taskData\n    : input;\n\nconst tasks = Array.isArray(formattedTaskData.tasks)\n  ? formattedTaskData.tasks\n  : Array.isArray(input.tasks)\n    ? input.tasks\n    : [];\n\nconst date = formattedTaskData.date || input.date || new Date().toISOString().split('T')[0];\nconst storageKey = `tasks_${date}.json`;\nconst storagePath = `/home/bograh/Code/cloud-storage-with-s3/.n8n-tasks/${storageKey}`;\nconst totalMinutes = input.totalMinutes ?? tasks.reduce((sum, task) => sum + (Number(task?.estimated_minutes) || 0), 0);\n\nconst filePayload = {\n  saved_at: new Date().toISOString(),\n  date,\n  summary:\n    formattedTaskData.summary ||\n    input.summary ||\n    (input.emailSubject ? input.emailSubject.replace(/^\\[Dev Tasks\\]\\s*/, '') : '') ||\n    '',\n  tasks,\n  totalTasks: input.totalTasks ?? tasks.length,\n  totalMinutes,\n  status: formattedTaskData.status || input.status || 'pending',\n  generated_at: formattedTaskData.generated_at || input.generated_at || null,\n  slackBlocks: Array.isArray(input.slackBlocks) ? input.slackBlocks : [],\n  emailSubject: input.emailSubject || '',\n  emailHtml: input.emailHtml || '',\n};\n\nreturn {\n  json: {\n    ...input,\n    taskData: {\n      ...formattedTaskData,\n      date,\n      tasks,\n      totalTasks: filePayload.totalTasks,\n      totalMinutes,\n    },\n    storageKey,\n    storagePath,\n    storagePayload: JSON.stringify(filePayload, null, 2),\n  },\n};"
+            },
+            "id": "fa91bedf-aab6-4171-984d-b8a8f05e43f4",
+            "name": "Prepare Task Storage",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -7392,
+                1632
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://7c5f-196-61-35-158.ngrok-free.app/mcp",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Accept",
+                            "value": "application/json, text/event-stream"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "jsonrpc",
+                            "value": "2.0"
+                        },
+                        {
+                            "name": "id",
+                            "value": "7"
+                        },
+                        {
+                            "name": "method",
+                            "value": "tools/call"
+                        },
+                        {
+                            "name": "params",
+                            "value": "={{ { name: 'run_command', arguments: { command: 'printf \"remaining todos: \" && (grep -rn \"TODO\\\\|FIXME\\\\|HACK\" --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.js\" --include=\"*.jsx\" --include=\"*.py\" --include=\"*.go\" . | wc -l || true) && printf \"\\n\" && (grep -rn \"TODO\\\\|FIXME\" --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.js\" --include=\"*.jsx\" --include=\"*.py\" --include=\"*.go\" . | head -20 || true)', cwd: '/home/bograh/Code/cloud-storage-with-s3', timeout_ms: 30000 } } }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "ebb7af52-bd12-47bf-bb51-2d3bec032108",
+            "name": "Count Remaining TODOs via MCP",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                -8096,
+                2160
+            ],
+            "notes": "Evening: counts remaining TODOs to measure progress."
+        },
+        {
+            "parameters": {
+                "jsCode": "const inputItem = $json;\n\nconst fallbackToday = new Date().toISOString().split('T')[0];\n\nconst rawContent =\n  inputItem.content?.parts?.[0]?.text ||\n  inputItem.content ||\n  inputItem.text ||\n  '{}';\n\nlet taskData;\ntry {\n  const stripped = String(rawContent)\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/```\\s*$/i, '')\n    .trim();\n\n  taskData = JSON.parse(stripped);\n} catch (e) {\n  const jsonMatch = String(rawContent).match(/\\{[\\s\\S]*\\}/);\n  try {\n    taskData = jsonMatch ? JSON.parse(jsonMatch[0]) : null;\n  } catch (e2) {\n    taskData = null;\n  }\n}\n\nif (!taskData || typeof taskData !== 'object' || Array.isArray(taskData)) {\n  taskData = {\n    date: fallbackToday,\n    summary: 'Task generation failed',\n    tasks: []\n  };\n}\n\nconst today = new Date().toISOString().split('T')[0];\ntaskData.date = today;\ntaskData.generated_at = new Date().toISOString();\ntaskData.status = 'pending';\n\nconst tasks = Array.isArray(taskData.tasks) ? taskData.tasks : [];\n\nconst priorityEmoji = {\n  high: ':red_circle:',\n  medium: ':large_yellow_circle:',\n  low: ':large_green_circle:'\n};\n\nconst categoryEmoji = {\n  bugfix: ':bug:',\n  feature: ':sparkles:',\n  refactor: ':hammer:',\n  test: ':white_check_mark:',\n  docs: ':books:',\n  chore: ':broom:'\n};\n\nconst slackBlocks = [\n  {\n    type: 'header',\n    text: {\n      type: 'plain_text',\n      text: `:sunrise: Daily Dev Tasks - ${today}`,\n      emoji: true\n    }\n  },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*Project Status:* ${taskData.summary || 'No summary available'}`\n    }\n  },\n  { type: 'divider' }\n];\n\nfor (const task of tasks) {\n  const pEmoji = priorityEmoji[task.priority] || ':white_circle:';\n  const cEmoji = categoryEmoji[task.category] || ':pushpin:';\n\n  slackBlocks.push({\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text:\n        `${pEmoji} *${task.id || 'TASK'}* - ${cEmoji} \\`${task.category || 'task'}\\`\\n` +\n        `*${task.title || 'Untitled task'}*\\n` +\n        `${task.description || 'No description provided'}\\n` +\n        `_Est: ~${task.estimated_minutes || '?'} min_` +\n        `${task.file_hints?.length ? ` | Files: \\`${task.file_hints.join('`, `')}\\`` : ''}`\n    }\n  });\n}\n\nconst totalMins = tasks.reduce((sum, task) => sum + (Number(task.estimated_minutes) || 0), 0);\n\nslackBlocks.push({ type: 'divider' });\nslackBlocks.push({\n  type: 'context',\n  elements: [\n    {\n      type: 'mrkdwn',\n      text: `Total tasks: *${tasks.length}* | Est. total: *${totalMins} min* | Generated by n8n`\n    }\n  ]\n});\n\nconst slackText = [\n  `Daily Dev Tasks - ${today}`,\n  `Project Status: ${taskData.summary || 'No summary available'}`,\n  '',\n  ...(tasks.length\n    ? tasks.map((task) => {\n        const pEmoji = priorityEmoji[task.priority] || ':white_circle:';\n        const cEmoji = categoryEmoji[task.category] || ':pushpin:';\n        const fileHintText = task.file_hints?.length ? ` | Files: ${task.file_hints.join(', ')}` : '';\n\n        return (\n          `\\n${pEmoji} ${task.id || 'TASK'} - ${cEmoji} ${task.title || 'Untitled task'}\\n` +\n          `Category: ${task.category || 'task'} | Est: ~${task.estimated_minutes || '?'} min${fileHintText}\\n` +\n          `${task.description || 'No description provided'}`\n        );\n      })\n    : ['No tasks were generated.']),\n  '',\n  `Total tasks: ${tasks.length} | Est. total: ${totalMins} min | Generated by n8n`\n].join('\\n');\n\nconst priorityColor = {\n  high: '#dc2626',\n  medium: '#d97706',\n  low: '#16a34a'\n};\n\nlet emailHtml = `\n<html>\n  <head>\n    <style>\n      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; margin: 0; padding: 20px; color: #1e293b; }\n      .container { max-width: 680px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }\n      .header { background: #1e293b; color: white; padding: 28px 32px; }\n      .header h1 { margin: 0; font-size: 22px; font-weight: 600; }\n      .header p { margin: 6px 0 0; opacity: 0.7; font-size: 14px; }\n      .summary { padding: 20px 32px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #475569; }\n      .task { padding: 20px 32px; border-bottom: 1px solid #f1f5f9; }\n      .task:last-child { border-bottom: none; }\n      .task-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }\n      .task-id { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.05em; }\n      .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }\n      .task-title { font-size: 15px; font-weight: 600; color: #1e293b; margin: 0 0 6px; }\n      .task-desc { font-size: 13px; color: #64748b; margin: 0 0 8px; line-height: 1.5; }\n      .task-meta { font-size: 12px; color: #94a3b8; }\n      .footer { padding: 20px 32px; background: #f8fafc; font-size: 12px; color: #94a3b8; text-align: center; }\n    </style>\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"header\">\n        <h1>&#9728;&#65039; Daily Development Tasks</h1>\n        <p>${today}</p>\n      </div>\n      <div class=\"summary\">\n        &#128203; <strong>Project Status:</strong> ${taskData.summary || 'No summary available'}\n      </div>\n`;\n\nfor (const task of tasks) {\n  const pColor = priorityColor[task.priority] || '#6b7280';\n  const pLabel = (task.priority || 'medium').toUpperCase();\n  const cLabel = (task.category || 'task').toUpperCase();\n\n  emailHtml += `\n    <div class=\"task\">\n      <div class=\"task-header\">\n        <span class=\"task-id\">${task.id || 'TASK'}</span>\n        <span class=\"badge\" style=\"background:${pColor}15;color:${pColor}\">${pLabel}</span>\n        <span class=\"badge\" style=\"background:#e2e8f0;color:#475569\">${cLabel}</span>\n      </div>\n      <p class=\"task-title\">${task.title || 'Untitled task'}</p>\n      <p class=\"task-desc\">${task.description || 'No description provided'}</p>\n      <p class=\"task-meta\">\n        &#9201; ~${task.estimated_minutes || '?'} min\n        ${task.file_hints?.length ? ` &nbsp;&bull;&nbsp; &#128196; ${task.file_hints.join(', ')}` : ''}\n      </p>\n    </div>\n  `;\n}\n\nemailHtml += `\n      <div class=\"footer\">${tasks.length} tasks &bull; ~${totalMins} min estimated &bull; n8n Automation</div>\n    </div>\n  </body>\n</html>\n`;\n\nreturn {\n  json: {\n    taskData,\n    slackBlocks,\n    slackText,\n    emailHtml,\n    emailSubject: `[Dev Tasks] ${today} - ${tasks.length} tasks queued`,\n    totalTasks: tasks.length,\n    totalMinutes: totalMins\n  }\n};"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -7600,
+                1632
+            ],
+            "id": "a554eb03-e127-4ac1-bf23-2b607be6c13f",
+            "name": "Format Morning Notifications"
+        },
+        {
+            "parameters": {
+                "trigger": [
+                    "app_mention"
+                ],
+                "channelId": {
+                    "__rl": true,
+                    "value": "C0AQN9K2W8J",
+                    "mode": "list"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.slackTrigger",
+            "typeVersion": 1,
+            "position": [
+                -9488,
+                1872
+            ],
+            "id": "65f818ad-d9fb-468b-a587-5de80913185e",
+            "name": "Slack Trigger",
+            "webhookId": "00e479d3-8253-4a47-8222-cb8e96d097a6",
+            "credentials": {
+                "slackApi": {
+                    "id": "zC0CykQkcHXXZ4tK",
+                    "name": "Slack account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json[\"text\"] }}",
+                            "operation": "regex",
+                            "value2": "/\\bmorning\\b/i"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                -9248,
+                1872
+            ],
+            "id": "65b0a435-70f4-44c7-acad-c85c5144cdd0",
+            "name": "Check Morning"
+        },
+        {
+            "parameters": {
+                "channel": "={{ $json[\"channel\"] }}",
+                "text": "Sorry didn't quite catch that",
+                "otherOptions": {},
+                "attachments": []
+            },
+            "type": "n8n-nodes-base.slack",
+            "typeVersion": 1,
+            "position": [
+                -8656,
+                1872
+            ],
+            "id": "bea3d615-1c3b-4878-bd4c-9fbe3915562b",
+            "name": "Reply to Slack",
+            "credentials": {
+                "slackApi": {
+                    "id": "zC0CykQkcHXXZ4tK",
+                    "name": "Slack account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json[\"text\"] }}",
+                            "operation": "regex",
+                            "value2": "/\\bevening\\b/i"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                -9008,
+                2032
+            ],
+            "id": "3bb34554-b63b-4262-9053-5ee22a83acd8",
+            "name": "Check Evening"
         }
     ],
     "pinData": {},
@@ -767,50 +779,7 @@
             "main": [
                 [
                     {
-                        "node": "Generate Tasks (Claude AI)",
-                        "type": "main",
-                        "index": 0
-                    },
-                    {
-                        "node": "Generate Weekly Report",
-                        "type": "main",
-                        "index": 0
-                    },
-                    {
                         "node": "Message a model",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Generate Tasks (Claude AI)": {
-            "main": [
-                [
-                    {
-                        "node": "Format Morning Notifications",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Format Morning Notifications": {
-            "main": [
-                [
-                    {
-                        "node": "Prepare Task Storage",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Prepare Task Storage": {
-            "main": [
-                [
-                    {
-                        "node": "Save Tasks to Disk via MCP",
                         "type": "main",
                         "index": 0
                     }
@@ -866,17 +835,6 @@
                 ]
             ]
         },
-        "Count Remaining TODOs via MCP": {
-            "main": [
-                [
-                    {
-                        "node": "Analyze Completion (Claude AI)",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
         "Analyze Completion (Claude AI)": {
             "main": [
                 [
@@ -904,7 +862,7 @@
                 ]
             ]
         },
-        "Generate Weekly Report": {
+        "Message a model": {
             "main": [
                 [
                     {
@@ -915,11 +873,80 @@
                 ]
             ]
         },
-        "Message a model": {
+        "Prepare Task Storage": {
             "main": [
                 [
                     {
-                        "node": "Format Morning Notifications",
+                        "node": "Save Tasks to Disk via MCP",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Count Remaining TODOs via MCP": {
+            "main": [
+                [
+                    {
+                        "node": "Analyze Completion (Claude AI)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Morning Notifications": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Task Storage",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Slack Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Check Morning",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Morning": {
+            "main": [
+                [
+                    {
+                        "node": "Git Pull via MCP",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Check Evening",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Evening": {
+            "main": [
+                [
+                    {
+                        "node": "Load Morning Tasks via MCP",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Reply to Slack",
                         "type": "main",
                         "index": 0
                     }
@@ -933,7 +960,7 @@
         "binaryMode": "separate",
         "availableInMCP": false
     },
-    "versionId": "cada601d-6546-4301-99ef-92cba4874b67",
+    "versionId": "44fff840-29e6-466f-93e9-10d4ab42cbbe",
     "meta": {
         "templateCredsSetupCompleted": true,
         "instanceId": "e89e159d2f6f362123df5e67fa3798fc88526b3e29e7da8cdf7ecb6fcc1848a1"
